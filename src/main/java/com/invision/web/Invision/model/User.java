@@ -1,10 +1,11 @@
 package com.invision.web.Invision.model;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 
+
+@Entity
+@Table(name="users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,6 +18,7 @@ public class User {
     @Email
     private String email;
 
+    @Enumerated(EnumType.STRING)
     private Role role;
 
     private String passwordHash;
