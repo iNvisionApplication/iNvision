@@ -1,31 +1,39 @@
 package com.invision.web.Invision.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+@Table(name="assets")
 @Entity
 @Data
 public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long assetId;
+    private Long assetId;
 
+    @NotNull
     private String title;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
     private Category category;
 
+    @Column(unique = true)
     private String serialNumber;
 
     private LocalDateTime acquisitionDate;
 
-    private double cost;
+    @Column(precision = 19,scale =4)
+    private BigDecimal cost;
 
+    @NotNull
     private String location;
 
+    @Enumerated(EnumType.STRING)
     private Condition condition;
 
     private String photoPath;

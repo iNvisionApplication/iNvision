@@ -1,24 +1,32 @@
 package com.invision.web.Invision.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 import java.time.LocalDateTime;
-
+@Table(name="audit_log")
+@Entity
+@Data
 public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long logId;
+    private Long logId;
 
     @ManyToOne
-    private long userId;
+    @JoinColumn(name="user_id")
+    private User user;
 
-    private Entity entityType; //asset or loan
+    @Enumerated(EnumType.STRING)
+    private EntityType entityType; //asset or loan
 
-    @ManyToOne
-    private long entityId;
+    @NotNull
+    private Long entityId;
 
+    @Enumerated(EnumType.STRING)
     private Action action;
 
+    @NotNull
     private LocalDateTime timeStamp;
 
     private String oldValue;
