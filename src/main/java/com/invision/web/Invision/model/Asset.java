@@ -36,6 +36,10 @@ public class Asset {
     @Enumerated(EnumType.STRING)
     private Condition condition;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private AssetStatus status;
+
     private String photoPath;
 
 }

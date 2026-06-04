@@ -1,6 +1,6 @@
 package com.invision.web.Invision.model;
 
-public enum Status {
+public enum LoanStatus {
     PENDING,
     APPROVED,
     REJECT

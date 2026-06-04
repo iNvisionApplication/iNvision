@@ -24,7 +24,7 @@ public class AuditLog {
     private Long entityId;
 
     @Enumerated(EnumType.STRING)
-    private Action action;
+    private ActionLog action;
 
     @NotNull
     private LocalDateTime timeStamp;

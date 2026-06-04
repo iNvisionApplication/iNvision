@@ -26,7 +26,7 @@ public class Loan {
     private LocalDateTime requestDate;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private LoanStatus status;
 
     private LocalDateTime checkoutDate;
 
