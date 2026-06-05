@@ -1,6 +1,5 @@
 package com.invision.web.Invision;
 
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -9,6 +8,6 @@ public class InvisionApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(InvisionApplication.class, args);
-
 	}
+
 }
