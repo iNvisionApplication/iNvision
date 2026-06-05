@@ -1,6 +1,6 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.Action;
+import com.invision.web.Invision.model.ActionLog;
 
-public record LoanActionDTO(long loanId, Action action) {
+public record LoanActionDTO(long loanId, ActionLog action) {
 }
