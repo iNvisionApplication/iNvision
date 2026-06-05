@@ -1,6 +1,7 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.dto.UserRegistrationDto;
+import com.invision.web.Invision.model.Department;
 import com.invision.web.Invision.model.Role;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
@@ -26,7 +27,7 @@ public class UserService {
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(request.department());
+        user.setDepartment(Department.valueOf(request.department()));
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -41,7 +42,7 @@ public class UserService {
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(request.department());
+        user.setDepartment(Department.valueOf(request.department()));
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));

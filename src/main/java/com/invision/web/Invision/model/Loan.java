@@ -39,4 +39,8 @@ public class Loan {
     private LocalDateTime dueDate;
 
     private LocalDateTime returnDate;
+
+    public boolean isOverdue(){
+        return checkoutDate.isBefore(LocalDateTime.now());
+    }
 }

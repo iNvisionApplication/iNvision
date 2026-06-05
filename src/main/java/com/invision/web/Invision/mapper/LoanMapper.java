@@ -7,11 +7,17 @@ import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.model.LoanStatus;
 import com.invision.web.Invision.model.User;
+import com.invision.web.Invision.repository.AssetRepository;
+import com.invision.web.Invision.repository.LoanRepository;
+import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 
 import java.time.LocalDateTime;
 
 public class LoanMapper {
+    AssetRepository assetRepository;
+    LoanRepository loanRepository;
+    UserRepository userRepository;
 
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
