@@ -5,9 +5,12 @@ import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.AssetStatus;
 import com.invision.web.Invision.model.Category;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+@Component
 public class AssetMapper {
 
     public AssetResponseDTO AssetToAssetResponseDTO(Asset asset){

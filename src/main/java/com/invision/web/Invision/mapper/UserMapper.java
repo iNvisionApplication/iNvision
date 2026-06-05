@@ -13,7 +13,7 @@ public class UserMapper {
                 department(regDTO.department()).
                 email(regDTO.email()).
                 role(regDTO.role()).
-                passwordHash(regDTO.password()).
+                password(regDTO.password()).
                 build();
     }
 
@@ -29,7 +29,7 @@ public class UserMapper {
                 department(regDTO.department()).
                 email(regDTO.email()).
                 role(Role.BORROWER).
-                passwordHash(regDTO.password()).
+                password(regDTO.password()).
                 build();
     }
 
