@@ -4,8 +4,7 @@ import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.mapper.LoanMapper;
-import com.invision.web.Invision.model.Asset;
-import com.invision.web.Invision.model.Department;
+import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.repository.LoanRepository;
@@ -13,7 +12,6 @@ import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 
 import java.util.List;
-import java.util.Optional;
 
 public class LoanService {
     AssetRepository assetRepository;

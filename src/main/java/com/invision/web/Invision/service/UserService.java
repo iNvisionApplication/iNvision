@@ -1,8 +1,8 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.dto.UserRegistrationDto;
-import com.invision.web.Invision.model.Department;
-import com.invision.web.Invision.model.Role;
+import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;

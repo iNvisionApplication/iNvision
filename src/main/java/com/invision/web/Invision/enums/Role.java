@@ -1,4 +1,4 @@
-package com.invision.web.Invision.model;
+package com.invision.web.Invision.enums;
 
 public enum Role {
 

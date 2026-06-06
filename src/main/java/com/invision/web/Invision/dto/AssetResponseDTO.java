@@ -1,7 +1,7 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.AssetStatus;
-import com.invision.web.Invision.model.Condition;
+import com.invision.web.Invision.enums.AssetStatus;
+import com.invision.web.Invision.enums.Condition;
 
 import java.time.LocalDateTime;
 

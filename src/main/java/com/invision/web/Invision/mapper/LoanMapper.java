@@ -5,7 +5,7 @@ import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.Loan;
-import com.invision.web.Invision.model.LoanStatus;
+import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.repository.LoanRepository;
