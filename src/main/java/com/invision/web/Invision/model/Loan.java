@@ -1,5 +1,6 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -39,4 +40,8 @@ public class Loan {
     private LocalDateTime dueDate;
 
     private LocalDateTime returnDate;
+
+    public boolean isOverdue(){
+        return checkoutDate.isBefore(LocalDateTime.now());
+    }
 }

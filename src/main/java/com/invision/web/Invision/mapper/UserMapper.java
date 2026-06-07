@@ -2,7 +2,8 @@ package com.invision.web.Invision.mapper;
 
 import com.invision.web.Invision.dto.UserRegistrationDto;
 import com.invision.web.Invision.dto.UserResponseDTO;
-import com.invision.web.Invision.model.Role;
+import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.model.User;
 
 public class UserMapper {
@@ -10,7 +11,7 @@ public class UserMapper {
     public User UserRegistrationDTOToUser(UserRegistrationDto regDTO){
 
         return User.builder().name(regDTO.name()).
-                department(regDTO.department()).
+                department(Department.valueOf(regDTO.department())).
                 email(regDTO.email()).
                 role(regDTO.role()).
                 password(regDTO.password()).
@@ -18,7 +19,7 @@ public class UserMapper {
     }
 
     public UserResponseDTO UserToUserResponseDTO(User user){
-        return new UserResponseDTO(String.valueOf(user.getUserId()), user.getName(), user.getDepartment(), user.getEmail(), user.getRole());
+        return new UserResponseDTO(String.valueOf(user.getUserId()), user.getName(), String.valueOf(user.getDepartment()), user.getEmail(), user.getRole());
 
 
     }
@@ -26,7 +27,7 @@ public class UserMapper {
     public User UserRegistrationDTOToBorrower(UserRegistrationDto regDTO){
 
         return User.builder().name(regDTO.name()).
-                department(regDTO.department()).
+                department(Department.valueOf(regDTO.department())).
                 email(regDTO.email()).
                 role(Role.BORROWER).
                 password(regDTO.password()).

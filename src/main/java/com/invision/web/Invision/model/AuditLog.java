@@ -1,5 +1,7 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.ActionLog;
+import com.invision.web.Invision.enums.EntityType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

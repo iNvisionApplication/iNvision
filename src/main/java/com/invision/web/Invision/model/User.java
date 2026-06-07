@@ -1,5 +1,7 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -15,8 +17,9 @@ import java.util.List;
 
 @Entity
 @Table(name="users")
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class User implements UserDetails {
 
@@ -26,8 +29,8 @@ public class User implements UserDetails {
 
     private String name;
 
-    private String department;
-
+    @Enumerated(EnumType.STRING)
+    private Department department;
 
     @Email
     @Column(unique = true, nullable = false)
@@ -38,26 +41,6 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
-
-
-    public long getUserId() { return userId; }
-    public void setUserId(long userId) { this.userId = userId; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDepartment() { return department; }
-    public void setDepartment(String department) { this.department = department; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-
-    public void setPassword(String password) { this.password = password; }
-
-
 
     @Override
     public String getPassword() {

@@ -26,21 +26,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger UI
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-
-                        // FIX: Updated to match the UserController's base path
-                        .requestMatchers("/api/user/public/**", "/api/user/register").permitAll()
-
-                        // FIX: Updated paths to include "/user"
-                        .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/user/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/api/user/borrower/**").hasRole("BORROWER")
-
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(basic -> {});
-
+                        .anyRequest().permitAll()
+                );
         return http.build();
     }
 
