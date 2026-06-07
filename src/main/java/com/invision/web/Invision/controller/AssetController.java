@@ -2,6 +2,7 @@ package com.invision.web.Invision.controller;
 
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
+import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,30 @@ public class AssetController {
     @GetMapping("/category/{category}")
     public ResponseEntity<List<AssetResponseDTO>> getAssetsByCategory(@PathVariable String category) {
         List<AssetResponseDTO> assets = assetService.getAssetsByCategory(category);
+        return ResponseEntity.ok(assets);
+    }
+
+    // NEW: Advanced search and filter with query parameters (GET request)
+    @GetMapping("/search")
+    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String condition) {
+
+        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(
+                title, category, status, location, condition
+        );
+        return ResponseEntity.ok(assets);
+    }
+
+    // Advanced search and filter with POST body
+    @PostMapping("/search")
+    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssetsPost(
+            @RequestBody AssetSearchRequest searchRequest) {
+
+        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(searchRequest);
         return ResponseEntity.ok(assets);
     }
 

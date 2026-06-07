@@ -19,9 +19,9 @@ public class LoanMapper {
     LoanRepository loanRepository;
     UserRepository userRepository;
 
-    AssetRepository assetRepository;
-    UserRepository userRepository;
-    LoanRepository loanRepository;
+    //AssetRepository assetRepository;
+    //UserRepository userRepository;
+    //LoanRepository loanRepository;
 
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
