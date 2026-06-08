@@ -11,19 +11,29 @@ import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+@Component
+@RequiredArgsConstructor
 public class LoanMapper {
-    AssetRepository assetRepository;
-    LoanRepository loanRepository;
-    UserRepository userRepository;
+    private final AssetRepository assetRepository;
+    private final LoanRepository loanRepository;
+    private final UserRepository userRepository;
 
     //AssetRepository assetRepository;
     //UserRepository userRepository;
     //LoanRepository loanRepository;
 
+
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
+        System.out.println("Mapping loan: " + loan.getLoanId());
+        System.out.println("Asset: " + loan.getAsset());
+        System.out.println("User: " + loan.getUser());
+
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
                 loan.getRequestDate(),loan.getStatus(),loan.getDueDate());
     }
@@ -39,13 +49,13 @@ public class LoanMapper {
                 .build();
     }
 
-    public Loan LoanActionDTOToLoan(LoanActionDTO actionDTO){
-        Loan loan = loanRepository.findById(actionDTO.loanId())
-                .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + actionDTO.loanId()));
-
-        loan.setStatus(actionDTO.loanStatus());
-
-        return loan;
-    }
+//    public Loan LoanActionDTOToLoan(Long loanId, LoanActionDTO actionDTO){
+//        Loan loan = loanRepository.findById(loanId)
+//                .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + loanId));
+//
+//        loan.setStatus(actionDTO.loanStatus());
+//
+//        return loan;
+//    }
 
 }

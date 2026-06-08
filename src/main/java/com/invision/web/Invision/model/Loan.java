@@ -22,11 +22,11 @@ public class Loan {
     private Long loanId;
 
     @ManyToOne
-    @JoinColumn(name ="asset_id")
+    @JoinColumn(name ="assetId")
     private Asset asset;
 
     @ManyToOne
-    @JoinColumn(name ="user_id")
+    @JoinColumn(name ="userId")
     private User user;
 
     @NotNull
@@ -44,4 +44,5 @@ public class Loan {
     public boolean isOverdue(){
         return checkoutDate.isBefore(LocalDateTime.now());
     }
+
 }

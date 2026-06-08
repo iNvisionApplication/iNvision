@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="asset_id")
     private Long assetId;
 
     @NotNull
@@ -34,6 +35,7 @@ public class Asset {
     @Column(unique = true)
     private String serialNumber;
 
+    @Column(name="acquisition_Date")
     private LocalDateTime acquisitionDate;
 
     @Column(precision = 19,scale =4)
