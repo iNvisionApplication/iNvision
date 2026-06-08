@@ -35,7 +35,9 @@
 
     <div class="sidebar-user">
         <div class="user-avatar"
-             th:text="${#strings.substring(#authentication.name, 0, 1).toUpperCase()}">U</div>
+             th:text="${#authentication != null ? #authentication.name.substring(0,1).toUpperCase() : 'U'}">
+            U
+        </div>
         <div class="user-info">
             <span class="user-name" sec:authentication="name">User</span>
             <span class="user-role">
@@ -50,7 +52,7 @@
         <li class="nav-section-label">Main</li>
         <li>
             <a th:href="@{/dashboard}"
-               th:classappend="${currentUri == ('dashboard') ? 'active' : ''}">
+               th:classappend="${currentUri == ('/dashboard') ? 'active' : ''}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                     <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                     <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>

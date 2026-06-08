@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Register — iNVision Asset Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+    <link rel="stylesheet" th:href="@{/css/auth.css}"/>
+</head>
+<body>
+
+<div class="auth-page">
+    <div class="auth-box">
+
+        <div class="auth-logo">
+            <svg width="44" height="44" viewBox="0 0 38 38" fill="none">
+                <rect x="9" y="14" width="5" height="18" fill="#16285a"/>
+                <circle cx="11.5" cy="9" r="3.5" fill="#16285a"/>
+                <polygon points="16,14 21,14 30,28 30,32 25,32 16,18" fill="#6b89b8" opacity="0.8"/>
+                <polygon points="16,14 21,14 21,32 16,32" fill="#16285a"/>
+                <polygon points="25,14 30,14 30,32 25,32" fill="#6b89b8"/>
+            </svg>
+
+            <div class="auth-logo-text">
+                <div class="logo-name">i<span>N</span>Vision</div>
+                <span class="logo-sub">Asset Management</span>
+            </div>
+        </div>
+
+        <h1 class="auth-title">Create account</h1>
+        <p class="auth-subtitle">Register as a borrower to request and track assets</p>
+
+        <div th:if="${nameError != null or departmentError != null or emailError != null or passwordError != null or confirmPasswordError != null}"
+             class="alert alert-error" style="margin: 0 0 20px;">
+            <span>Please correct the errors highlighted below.</span>
+        </div>
+
+        <form th:action="@{/register}" method="post">
+
+            <div class="form-group">
+                <label class="form-label" for="name">Full Name</label>
+                <input class="form-control" type="text" id="name" name="name"
+                       th:value="${name}" placeholder="Your full name" required/>
+                <span class="auth-field-error" th:if="${nameError}" th:text="${nameError}"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="department">Department</label>
+                <select class="form-control" id="department" name="department" required>
+                    <option value="">— Select department —</option>
+                    <option value="IT" th:selected="${department == 'IT'}">IT</option>
+                    <option value="MARKETING" th:selected="${department == 'MARKETING'}">Marketing</option>
+                    <option value="SALES" th:selected="${department == 'SALES'}">Sales</option>
+                    <option value="OTHER" th:selected="${department == 'OTHER'}">Other</option>
+                </select>
+                <span class="auth-field-error" th:if="${departmentError}" th:text="${departmentError}"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input class="form-control" type="email" id="email" name="email"
+                       th:value="${email}" placeholder="you@company.com" required/>
+                <span class="auth-field-error" th:if="${emailError}" th:text="${emailError}"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-control" type="password" id="password" name="password"
+                       placeholder="Min. 8 characters" required/>
+                <span class="auth-field-error" th:if="${passwordError}" th:text="${passwordError}"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                <input class="form-control" type="password" id="confirmPassword" name="confirmPassword"
+                       placeholder="Repeat password" required/>
+                <span class="auth-field-error" th:if="${confirmPasswordError}" th:text="${confirmPasswordError}"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
+                Create Account
+            </button>
+        </form>
+
+        <div class="brand-rule">or</div>
+
+        <p class="auth-link">
+            Already have an account? <a th:href="@{/login}">Sign in here</a>
+        </p>
+        <p style="text-align:center;margin-top:24px;font-size:10px;color:var(--text-muted);letter-spacing:0.06em;">
+            LOANING ASSETS. EMPOWERING POSSIBILITIES.
+        </p>
+
+    </div>
+</div>
+
+</body>
+</html>

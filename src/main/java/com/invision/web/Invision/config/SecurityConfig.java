@@ -1,30 +1,42 @@
 package com.invision.web.Invision.config;
 
+import com.invision.web.Invision.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
+
+    private final CustomUserDetailsService customUserDetailsService;
+
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
+        this.customUserDetailsService = customUserDetailsService;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .userDetailsService(customUserDetailsService)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/uploads/**").permitAll()
-                        .requestMatchers("/login", "/register").permitAll()
+                        .requestMatchers(
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/uploads/**",
+                                "/favicon.ico",
+                                "/login",
+                                "/register"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
+                        .usernameParameter("username")
+                        .passwordParameter("password")
                         .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
                 )
@@ -32,24 +44,8 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/login?logout")
                         .permitAll()
                 );
-        return http.build();
-    }
 
-    // temporary in-memory users so you can log in and test pages
-    // replace this entire bean once CustomUserDetailsService is wired up
-    @Bean
-    public UserDetailsService userDetailsService() {
-        var manager = new InMemoryUserDetailsManager();
-        manager.createUser(User.withUsername("admin@invision.co.za")
-                .password(passwordEncoder().encode("admin123"))
-                .roles("ADMIN").build());
-        manager.createUser(User.withUsername("manager@invision.co.za")
-                .password(passwordEncoder().encode("manager123"))
-                .roles("MANAGER").build());
-        manager.createUser(User.withUsername("staff@invision.co.za")
-                .password(passwordEncoder().encode("staff123"))
-                .roles("BORROWER").build());
-        return manager;
+        return http.build();
     }
 
     @Bean
