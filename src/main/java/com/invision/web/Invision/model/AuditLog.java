@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-@Table(name="audit_log")
+@Table(name="auditLog")
 @Entity
 @Data
 public class AuditLog {
@@ -16,22 +16,25 @@ public class AuditLog {
     private Long logId;
 
     @ManyToOne
-    @JoinColumn(name="user_id")
+    @JoinColumn(name="userId")
     private User user;
 
-    @Enumerated(EnumType.STRING)
+    @Column(name = "entityType")
     private EntityType entityType; //asset or loan
 
-    @NotNull
-    private Long entityId;
-
+    @Column(name = "action")
     @Enumerated(EnumType.STRING)
     private ActionLog action;
 
-    @NotNull
-    private LocalDateTime timeStamp;
-
+    @Column(name = "oldValue")
     private String oldValue;
 
+    @Column(name = "newValue")
     private String newValue;
+
+    @Column(name = "entityId")
+    private Long entityId;
+
+    @Column(name = "timeStamp")
+    private LocalDateTime timeStamp;
 }
