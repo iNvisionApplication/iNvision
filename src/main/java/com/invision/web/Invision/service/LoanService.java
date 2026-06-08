@@ -4,6 +4,7 @@ import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.AssetStatus;
+import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.mapper.LoanMapper;
 import com.invision.web.Invision.enums.Department;
@@ -14,28 +15,31 @@ import com.invision.web.Invision.repository.LoanRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class LoanService {
     private final LoanRepository loanRepository;
     private final LoanMapper loanMapper;
     private final AssetRepository assetRepository;
+    private final AuditLogService auditLogService; // Inject custom helper
 
     public List<LoanResponseDTO> getAllOverdueLoans(){
-        return loanRepository.findAll().stream().
-                filter(Loan::isOverdue).
-                map(loanMapper::loanToLoanResponseDTO).toList();
+        return loanRepository.findAll().stream()
+                .filter(Loan::isOverdue)
+                .map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
     public List<LoanResponseDTO> getOverdueLoansByDepartment(Department department){
-        return loanRepository.findAll().stream().filter(loan -> loan.getUser().getDepartment() == department).
-                filter(Loan::isOverdue).
-                map(loanMapper::loanToLoanResponseDTO).toList();
+        return loanRepository.findAll().stream()
+                .filter(loan -> loan.getUser().getDepartment() == department)
+                .filter(Loan::isOverdue)
+                .map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
     public List<LoanResponseDTO> getLoansByAsset(Long assetId){
@@ -46,36 +50,56 @@ public class LoanService {
         return loanRepository.findByUserUserId(userId).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-    public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO){
-        Loan loan = loanRepository.findById(loanId).orElseThrow(()->new EntityNotFoundException("Loan not found: " +loanId ));
+    public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO, Long userId){
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + loanId));
+
+        LoanStatus oldStatus = loan.getStatus();
         loan.setStatus(actionDTO.loanStatus());
 
-        if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
+        Asset asset = loan.getAsset();
+        String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
+
+        // Explicit structural state routing to evaluate check-in or check-out lifecycles
+        if (actionDTO.loanStatus() == LoanStatus.APPROVED) {
+            if (asset != null) {
+                asset.setStatus(AssetStatus.LOANED);
+                assetRepository.save(asset);
+            }
+            auditLogService.logCheckOut(userId, loanId, assetInfo);
+
+        } else if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
-            Asset asset = loan.getAsset();
-            asset.setStatus(AssetStatus.AVAILABLE);
-            assetRepository.save(asset);
+            if (asset != null) {
+                asset.setStatus(AssetStatus.AVAILABLE);
+                assetRepository.save(asset);
+            }
+            auditLogService.logCheckIn(userId, loanId, assetInfo);
+
+        } else {
+            // General update auditing (e.g., REJECTED, PENDING updates)
+            auditLogService.logUpdate(userId, EntityType.LOAN, loanId, "Status: " + oldStatus, "Status: " + actionDTO.loanStatus());
         }
-
-
 
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
-    public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
+    public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO, Long userId){
         Loan loan = loanMapper.loanRequestDTOToLoan(requestDTO);
-        return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
+        loanRepository.save(loan);
+
+        // Audit log registration for initial request creation
+        auditLogService.logCreate(userId, EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
+
+        return loanMapper.loanToLoanResponseDTO(loan);
     }
 
     public List<LoanResponseDTO> getAllLoans(){
-        return loanRepository.findAll().stream().
-                map(loanMapper::loanToLoanResponseDTO).toList();
+        return loanRepository.findAll().stream()
+                .map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
     public List<LoanResponseDTO> getUserLoansByStatus(Long userId, LoanStatus status){
-        return loanRepository.findByUserUserIdAndStatus(userId,status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
+        return loanRepository.findByUserUserIdAndStatus(userId, status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
-
-
-
 }

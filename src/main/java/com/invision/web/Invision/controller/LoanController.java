@@ -21,14 +21,20 @@ public class LoanController {
     private final LoanService loanService;
 
     @PostMapping("/")
-    public ResponseEntity<LoanResponseDTO> requestLoan(@RequestBody LoanRequestDTO loanRequestDTO){
-        return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO));
+    public ResponseEntity<LoanResponseDTO> requestLoan(
+            @RequestBody LoanRequestDTO loanRequestDTO,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO, userId));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<LoanResponseDTO> updateLoanStatus(@PathVariable ("id")Long loanId,@RequestBody LoanActionDTO actionDTO){
+    public ResponseEntity<LoanResponseDTO> updateLoanStatus(
+            @PathVariable("id") Long loanId,
+            @RequestBody LoanActionDTO actionDTO,
+            @RequestHeader("X-User-Id") Long userId) {
 
-        return ResponseEntity.ok(loanService.updateLoanStatus(loanId,actionDTO));
+        return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO, userId));
     }
 
     @GetMapping("/overdue_loans")

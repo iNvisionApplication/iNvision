@@ -1,6 +1,6 @@
 package com.invision.web.Invision.mapper;
 
-import com.invision.web.Invision.dto.UserRegistrationDto;
+import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.dto.UserResponseDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.Role;
@@ -8,7 +8,7 @@ import com.invision.web.Invision.model.User;
 
 public class UserMapper {
 
-    public User UserRegistrationDTOToUser(UserRegistrationDto regDTO){
+    public User UserRegistrationDTOToUser(UserRegistrationDTO regDTO){
 
         return User.builder().name(regDTO.name()).
                 department(Department.valueOf(regDTO.department())).
@@ -24,7 +24,7 @@ public class UserMapper {
 
     }
 
-    public User UserRegistrationDTOToBorrower(UserRegistrationDto regDTO){
+    public User UserRegistrationDTOToBorrower(UserRegistrationDTO regDTO){
 
         return User.builder().name(regDTO.name()).
                 department(Department.valueOf(regDTO.department())).

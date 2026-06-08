@@ -67,10 +67,12 @@ public class AssetController {
         return ResponseEntity.ok(assets);
     }
 
-    // Create a new asset
     @PostMapping
-    public ResponseEntity<AssetResponseDTO> createAsset(@RequestBody AssetRequestDTO assetRequestDTO) {
-        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
+    public ResponseEntity<AssetResponseDTO> createAsset(
+            @RequestBody AssetRequestDTO assetRequestDTO,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO, userId);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
     }
 
@@ -78,27 +80,34 @@ public class AssetController {
     @PutMapping("/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
-            @RequestBody AssetRequestDTO assetDetails) {
-        String result = assetService.updateAsset(assetId, assetDetails);
+            @RequestBody AssetRequestDTO assetDetails,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        String result = assetService.updateAsset(assetId, assetDetails, userId);
         return ResponseEntity.ok(result);
     }
 
     // Delete an asset
     @DeleteMapping("/{assetId}")
-    public ResponseEntity<String> deleteAsset(@PathVariable Long assetId) {
-        assetService.deleteAsset(assetId);
+    public ResponseEntity<String> deleteAsset(
+            @PathVariable Long assetId,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        assetService.deleteAsset(assetId, userId);
         return ResponseEntity.ok("Asset deleted successfully with ID: " + assetId);
     }
 
-    // UPDATE
+    // Bulk Import CSV
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadCSV(@RequestPart("file") MultipartFile file) {
+    public ResponseEntity<String> uploadCSV(
+            @RequestPart("file") MultipartFile file,
+            @RequestHeader("X-User-Id") Long userId) {
         try {
-            assetService.bulkImportAssets(file);
+            assetService.bulkImportAssets(file, userId);
             return ResponseEntity.ok("CSV imported successfully");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to process CSV");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to process CSV: " + e.getMessage());
         }
     }
 }
