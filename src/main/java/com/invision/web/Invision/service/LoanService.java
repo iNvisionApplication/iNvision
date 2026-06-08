@@ -50,7 +50,7 @@ public class LoanService {
         Loan loan = loanRepository.findById(loanId).orElseThrow(()->new EntityNotFoundException("Loan not found: " +loanId ));
         loan.setStatus(actionDTO.loanStatus());
 
-        if (actionDTO.loanStatus() == LoanStatus.SETTLED) {
+        if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
             Asset asset = loan.getAsset();
             asset.setStatus(AssetStatus.AVAILABLE);
