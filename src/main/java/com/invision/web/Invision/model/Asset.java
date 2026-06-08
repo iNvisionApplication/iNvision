@@ -22,35 +22,40 @@ import java.time.LocalDateTime;
 public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="asset_id")
+    @Column(name = "asset_id")  // snake_case
     private Long assetId;
 
     @NotNull
+    @Column(name = "title")
     private String title;
 
     @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(name = "category")
     private Category category;
 
-    @Column(unique = true)
+    @Column(name = "serial_number", unique = true)  // snake_case
     private String serialNumber;
 
-    @Column(name="acquisition_Date")
+    @Column(name = "acquisition_date")
     private LocalDateTime acquisitionDate;
 
-    @Column(precision = 19,scale =4)
+    @Column(name = "cost", precision = 19, scale = 4)
     private BigDecimal cost;
 
     @NotNull
+    @Column(name = "location")
     private String location;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "condition")
     private Condition condition;
 
     @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private AssetStatus status;
 
+    @Column(name = "photo_path")  // snake_case
     private String photoPath;
-
 }

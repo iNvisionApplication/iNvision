@@ -5,8 +5,10 @@ import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -86,5 +88,17 @@ public class AssetController {
     public ResponseEntity<String> deleteAsset(@PathVariable Long assetId) {
         assetService.deleteAsset(assetId);
         return ResponseEntity.ok("Asset deleted successfully with ID: " + assetId);
+    }
+
+    // UPDATE
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadCSV(@RequestPart("file") MultipartFile file) {
+        try {
+            assetService.bulkImportAssets(file);
+            return ResponseEntity.ok("CSV imported successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to process CSV");
+        }
     }
 }
