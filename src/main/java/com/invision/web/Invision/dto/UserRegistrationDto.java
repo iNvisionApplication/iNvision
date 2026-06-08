@@ -1,6 +1,6 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.Role;
+import com.invision.web.Invision.enums.Role;
 
 public record UserRegistrationDto(
         String name,

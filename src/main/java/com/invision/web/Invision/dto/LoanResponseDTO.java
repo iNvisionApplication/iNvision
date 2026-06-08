@@ -1,6 +1,6 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.LoanStatus;
+import com.invision.web.Invision.enums.LoanStatus;
 
 
 import java.time.LocalDateTime;

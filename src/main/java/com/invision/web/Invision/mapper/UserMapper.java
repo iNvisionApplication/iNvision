@@ -2,8 +2,8 @@ package com.invision.web.Invision.mapper;
 
 import com.invision.web.Invision.dto.UserRegistrationDto;
 import com.invision.web.Invision.dto.UserResponseDTO;
-import com.invision.web.Invision.model.Department;
-import com.invision.web.Invision.model.Role;
+import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.model.User;
 
 public class UserMapper {

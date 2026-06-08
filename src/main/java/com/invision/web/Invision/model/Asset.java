@@ -1,5 +1,8 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.AssetStatus;
+import com.invision.web.Invision.enums.Category;
+import com.invision.web.Invision.enums.Condition;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

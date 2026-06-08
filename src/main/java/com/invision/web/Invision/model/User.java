@@ -1,5 +1,7 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -27,6 +29,7 @@ public class User implements UserDetails {
 
     private String name;
 
+    @Enumerated(EnumType.STRING)
     private Department department;
 
     @Email

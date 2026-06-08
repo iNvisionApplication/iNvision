@@ -3,11 +3,13 @@ package com.invision.web.Invision.mapper;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.model.Asset;
-import com.invision.web.Invision.model.AssetStatus;
-import com.invision.web.Invision.model.Category;
+import com.invision.web.Invision.enums.AssetStatus;
+import com.invision.web.Invision.enums.Category;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+@Component
 public class AssetMapper {
 
     public AssetResponseDTO AssetToAssetResponseDTO(Asset asset){
