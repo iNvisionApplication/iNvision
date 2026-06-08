@@ -1,11 +1,12 @@
 package com.invision.web.Invision.controller;
 
-import com.invision.web.Invision.dto.UserRegistrationDto;
+import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.service.UserService;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/user")
+@Controller
+@RequestMapping("/api")
 public class UserController {
 
     private final UserService userService;
@@ -15,20 +16,20 @@ public class UserController {
     }
 
     @PostMapping("/admin/create-staff")
-    public String createElevatedUser(@RequestBody UserRegistrationDto request) {
+    public String createElevatedUser(@RequestBody UserRegistrationDTO request) {
         return userService.createStaffUser(request);
     }
 
 
     @PostMapping("/register")
-    public String registerUser(@RequestBody UserRegistrationDto request) {
+    public String registerUser(@RequestBody UserRegistrationDTO request) {
         return userService.registerUser(request);
     }
 
 
-    @GetMapping("/public/home")
+    @GetMapping("/home")
     public String publicAccess() {
-        return "Public Content: LANDING PAGE.";
+        return "dashboard/dashboard";
     }
 
 
