@@ -32,6 +32,9 @@ public class Loan {
     @NotNull
     private LocalDateTime requestDate;
 
+    @NotNull
+    private String description;
+
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 

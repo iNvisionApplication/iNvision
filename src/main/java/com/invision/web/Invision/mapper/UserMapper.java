@@ -11,7 +11,7 @@ public class UserMapper {
     public User UserRegistrationDTOToUser(UserRegistrationDTO regDTO){
 
         return User.builder().name(regDTO.name()).
-                department(Department.valueOf(regDTO.department())).
+                department(regDTO.department()).
                 email(regDTO.email()).
                 role(regDTO.role()).
                 password(regDTO.password()).
@@ -27,7 +27,7 @@ public class UserMapper {
     public User UserRegistrationDTOToBorrower(UserRegistrationDTO regDTO){
 
         return User.builder().name(regDTO.name()).
-                department(Department.valueOf(regDTO.department())).
+                department(regDTO.department()).
                 email(regDTO.email()).
                 role(Role.BORROWER).
                 password(regDTO.password()).

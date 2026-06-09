@@ -41,7 +41,7 @@ public class UserService {
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(Department.valueOf(request.department()));
+        user.setDepartment(request.department());
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -56,7 +56,7 @@ public class UserService {
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(Department.valueOf(request.department()));
+        user.setDepartment(request.department());
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));
