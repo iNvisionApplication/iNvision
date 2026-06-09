@@ -1,4 +1,4 @@
-package com.invision.web.Invision.controller;
+package com.invision.web.Invision.controller.apis;
 
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
@@ -64,20 +64,18 @@ public class AssetController {
     @PutMapping("/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
-            @RequestBody AssetRequestDTO assetDetails,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestBody AssetRequestDTO assetDetails) {
 
-        String result = assetService.updateAsset(assetId, assetDetails, userId);
+        String result = assetService.updateAsset(assetId, assetDetails);
         return ResponseEntity.ok(result);
     }
 
     // Delete an asset
     @DeleteMapping("/{assetId}")
     public ResponseEntity<String> deleteAsset(
-            @PathVariable Long assetId,
-            @RequestHeader("X-User-Id") Long userId) {
+            @PathVariable Long assetId) {
 
-        assetService.deleteAsset(assetId, userId);
+        assetService.deleteAsset(assetId);
         return ResponseEntity.ok("Asset deleted successfully with ID: " + assetId);
     }
 

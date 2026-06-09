@@ -1,5 +1,4 @@
-package com.invision.web.Invision.controller;
-
+package com.invision.web.Invision.controller.apis;
 
 import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.enums.Department;

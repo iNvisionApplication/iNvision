@@ -1,5 +1,6 @@
 package com.invision.web.Invision.service;
 
+import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
@@ -47,7 +48,7 @@ public class AssetService {
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    public String updateAsset(Long assetId, AssetRequestDTO assetDetails, Long userId){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
@@ -67,12 +68,12 @@ public class AssetService {
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        auditLogService.logUpdate(userId, EntityType.ASSET, assetId, oldDetails, newDetails);
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId, oldDetails, newDetails);
 
         return "Asset updated.";
     }
 
-    public void deleteAsset(Long assetId, Long userId){
+    public void deleteAsset(Long assetId){
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
@@ -80,7 +81,7 @@ public class AssetService {
 
         assetRepository.deleteById(assetId);
 
-        auditLogService.logDelete(userId, EntityType.ASSET, assetId, snapshot);
+        auditLogService.logDelete(getCurrentUserId(), EntityType.ASSET, assetId, snapshot);
     }
 
     public List<AssetResponseDTO> getAllAssets() {
@@ -235,5 +236,16 @@ public class AssetService {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    public Long getCurrentUserId() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId(); // Returns your actual logged-in user's database ID
+        }
+        return null; // System or unauthenticated action
     }
 }

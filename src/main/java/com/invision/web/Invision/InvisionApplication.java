@@ -1,7 +1,6 @@
 package com.invision.web.Invision;
 
-import com.invision.web.Invision.controller.LoanController;
-import com.invision.web.Invision.service.LoanService;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
