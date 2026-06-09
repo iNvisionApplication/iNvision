@@ -40,7 +40,7 @@ public class Asset {
     @Column(name = "acquisition_date")
     private LocalDateTime acquisitionDate;
 
-    @Column(name = "cost", precision = 19, scale = 4)
+    @Column(name = "cost", precision = 19, scale = 2)
     private BigDecimal cost;
 
     @NotNull

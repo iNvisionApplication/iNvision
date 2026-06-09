@@ -36,14 +36,12 @@ public class AssetService {
 
     private final AssetRepository assetRepository;
     private final AssetMapper assetMapper;
-    private final AuditLogService auditLogService; // Inject custom helper
+    private final AuditLogService auditLogService;
 
-    // ADD ASSET using DTOs
     public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO, Long userId){
         Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
         assetRepository.save(asset);
 
-        // Audit Log entry
         auditLogService.logCreate(userId, EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
         return assetMapper.AssetToAssetResponseDTO(asset);
@@ -69,7 +67,6 @@ public class AssetService {
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        // Audit Log entry
         auditLogService.logUpdate(userId, EntityType.ASSET, assetId, oldDetails, newDetails);
 
         return "Asset updated.";
@@ -83,7 +80,6 @@ public class AssetService {
 
         assetRepository.deleteById(assetId);
 
-        // Audit Log entry
         auditLogService.logDelete(userId, EntityType.ASSET, assetId, snapshot);
     }
 
@@ -121,6 +117,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
+    // UPDATED METHOD - Main search and filter logic
     public List<AssetResponseDTO> searchAndFilterAssets(
             String title,
             String category,
@@ -130,20 +127,34 @@ public class AssetService {
 
         Category categoryEnum = null;
         if (category != null && !category.isEmpty()) {
-            try { categoryEnum = Category.valueOf(category.toUpperCase()); } catch (IllegalArgumentException e) {}
+            try {
+                categoryEnum = Category.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid category - will return empty results
+            }
         }
 
         AssetStatus statusEnum = null;
         if (status != null && !status.isEmpty()) {
-            try { statusEnum = AssetStatus.valueOf(status.toUpperCase()); } catch (IllegalArgumentException e) {}
+            try {
+                statusEnum = AssetStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid status - will return empty results
+            }
         }
 
         Condition conditionEnum = null;
         if (condition != null && !condition.isEmpty()) {
-            try { conditionEnum = Condition.valueOf(condition.toUpperCase()); } catch (IllegalArgumentException e) {}
+            try {
+                conditionEnum = Condition.valueOf(condition.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid condition - will return empty results
+            }
         }
 
-        List<Asset> assets = assetRepository.searchAndFilterAssets(title, categoryEnum, statusEnum, location, conditionEnum);
+        List<Asset> assets = assetRepository.searchAndFilterAssets(
+                title, categoryEnum, statusEnum, location, conditionEnum
+        );
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
@@ -217,7 +228,6 @@ public class AssetService {
 
             if (!assets.isEmpty()) {
                 assetRepository.saveAll(assets);
-                // Track the batch upload operation in the logs
                 auditLogService.logCreate(userId, EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
             } else {
                 throw new RuntimeException("No valid assets to import");

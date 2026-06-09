@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assets")
+@RequestMapping("/assets")
 public class AssetController {
 
     private final AssetService assetService;
@@ -36,14 +36,7 @@ public class AssetController {
         return ResponseEntity.ok(asset);
     }
 
-    // Search assets by category
-    @GetMapping("/category/{category}")
-    public ResponseEntity<List<AssetResponseDTO>> getAssetsByCategory(@PathVariable String category) {
-        List<AssetResponseDTO> assets = assetService.getAssetsByCategory(category);
-        return ResponseEntity.ok(assets);
-    }
-
-    // NEW: Advanced search and filter with query parameters (GET request)
+    // Advanced search and filter with query parameters (GET request)
     @GetMapping("/search")
     public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets(
             @RequestParam(required = false) String title,
@@ -55,15 +48,6 @@ public class AssetController {
         List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(
                 title, category, status, location, condition
         );
-        return ResponseEntity.ok(assets);
-    }
-
-    // Advanced search and filter with POST body
-    @PostMapping("/search")
-    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssetsPost(
-            @RequestBody AssetSearchRequest searchRequest) {
-
-        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(searchRequest);
         return ResponseEntity.ok(assets);
     }
 
