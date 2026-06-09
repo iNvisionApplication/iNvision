@@ -4,14 +4,16 @@ import com.invision.web.Invision.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 public class SecurityConfig {
 
-    CustomUserDetailsService customUserDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
         this.customUserDetailsService = customUserDetailsService;
@@ -42,7 +44,19 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true) // Clears session data on logout
+                        .deleteCookies("JSESSIONID") // Deletes the session cookie
                         .permitAll()
+                )
+                .sessionManagement(session -> session
+
+                        .sessionFixation(fixation -> fixation.newSession())
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+
+
+                        .maximumSessions(2)
+                        .maxSessionsPreventsLogin(false)
+                        .expiredUrl("/login?expired=true")
                 );
 
         return http.build();
@@ -51,5 +65,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 }

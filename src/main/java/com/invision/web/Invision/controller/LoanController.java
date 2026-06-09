@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/loan")
+@RequestMapping("/loans")
 @RequiredArgsConstructor
 public class LoanController {
 
@@ -22,19 +22,17 @@ public class LoanController {
 
     @PostMapping("/")
     public ResponseEntity<LoanResponseDTO> requestLoan(
-            @RequestBody LoanRequestDTO loanRequestDTO,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestBody LoanRequestDTO loanRequestDTO) {
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO, userId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> updateLoanStatus(
             @PathVariable("id") Long loanId,
-            @RequestBody LoanActionDTO actionDTO,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestBody LoanActionDTO actionDTO) {
 
-        return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO, userId));
+        return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO));
     }
 
     @GetMapping("/overdue_loans")

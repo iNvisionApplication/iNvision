@@ -1,5 +1,6 @@
 package com.invision.web.Invision.service;
 
+import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
@@ -10,8 +11,10 @@ import com.invision.web.Invision.mapper.LoanMapper;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.Loan;
+import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.repository.LoanRepository;
+import com.invision.web.Invision.service.AuditLogService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,7 +53,7 @@ public class LoanService {
         return loanRepository.findByUserUserId(userId).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-    public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO, Long userId){
+    public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO){
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + loanId));
 
@@ -66,7 +69,7 @@ public class LoanService {
                 asset.setStatus(AssetStatus.LOANED);
                 assetRepository.save(asset);
             }
-            auditLogService.logCheckOut(userId, loanId, assetInfo);
+            auditLogService.logCheckOut(getCurrentUserId(), loanId, assetInfo);
 
         } else if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
@@ -74,22 +77,22 @@ public class LoanService {
                 asset.setStatus(AssetStatus.AVAILABLE);
                 assetRepository.save(asset);
             }
-            auditLogService.logCheckIn(userId, loanId, assetInfo);
+            auditLogService.logCheckIn(getCurrentUserId(), loanId, assetInfo);
 
         } else {
             // General update auditing (e.g., REJECTED, PENDING updates)
-            auditLogService.logUpdate(userId, EntityType.LOAN, loanId, "Status: " + oldStatus, "Status: " + actionDTO.loanStatus());
+            auditLogService.logUpdate(getCurrentUserId(), EntityType.LOAN, loanId, "Status: " + oldStatus, "Status: " + actionDTO.loanStatus());
         }
 
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
-    public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO, Long userId){
+    public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
         Loan loan = loanMapper.loanRequestDTOToLoan(requestDTO);
         loanRepository.save(loan);
 
         // Audit log registration for initial request creation
-        auditLogService.logCreate(userId, EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
+        auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
 
         return loanMapper.loanToLoanResponseDTO(loan);
     }
@@ -102,4 +105,18 @@ public class LoanService {
     public List<LoanResponseDTO> getUserLoansByStatus(Long userId, LoanStatus status){
         return loanRepository.findByUserUserIdAndStatus(userId, status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
+
+    public Long getCurrentUserId() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId(); // Returns your actual logged-in user's database ID
+        }
+        return null; // System or unauthenticated action
+    }
+
+
 }
+
