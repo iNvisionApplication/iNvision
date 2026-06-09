@@ -1,4 +1,4 @@
-package com.invision.web.Invision.controller;
+package com.invision.web.Invision.controller.apis;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
