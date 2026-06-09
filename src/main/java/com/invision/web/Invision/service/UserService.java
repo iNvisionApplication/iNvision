@@ -2,6 +2,7 @@ package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.dto.UserRegistrationDto;
 import com.invision.web.Invision.enums.Role;
+import com.invision.web.Invision.exception.EmailAlreadyExistsException;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +15,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -22,12 +24,9 @@ public class UserService {
     @Transactional
     public void register(UserRegistrationDto dto) {
 
-        if (!dto.password().equals(dto.confirmPassword())) {
-            throw new IllegalArgumentException("Passwords do not match");
-        }
 
         if (userRepository.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new EmailAlreadyExistsException("Email already exists");
         }
 
         User user = new User();

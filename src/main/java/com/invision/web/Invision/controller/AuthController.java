@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Objects;
+import com.invision.web.Invision.exception.EmailAlreadyExistsException;
+import com.invision.web.Invision.exception.PasswordMismatchException;
 
 @Controller
 @RequiredArgsConstructor
@@ -97,8 +99,14 @@ public class AuthController {
 
         try {
             userService.register(dto);
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("emailError", e.getMessage());
+        } catch (EmailAlreadyExistsException ex) {
+            model.addAttribute("emailError", ex.getMessage());
+            model.addAttribute("name", name);
+            model.addAttribute("department", department);
+            model.addAttribute("email", email);
+            return "auth/register";
+        } catch (PasswordMismatchException ex) {
+            model.addAttribute("confirmPasswordError", ex.getMessage());
             model.addAttribute("name", name);
             model.addAttribute("department", department);
             model.addAttribute("email", email);

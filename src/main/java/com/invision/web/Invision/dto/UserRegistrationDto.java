@@ -20,7 +20,7 @@ public record UserRegistrationDto(
         @Size(min = 8, message = "Password must be at least 8 characters")
         String password,
 
-        // confirmPassword is not in the record - validated separately in controller
+        // confirmPassword is not in the record therefore validated separately in controller
         String confirmPassword,
 
         Role role
