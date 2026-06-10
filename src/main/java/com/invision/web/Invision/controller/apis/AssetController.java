@@ -53,10 +53,9 @@ public class AssetController {
 
     @PostMapping
     public ResponseEntity<AssetResponseDTO> createAsset(
-            @RequestBody AssetRequestDTO assetRequestDTO,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestBody AssetRequestDTO assetRequestDTO) {
 
-        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO, userId);
+        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
     }
 

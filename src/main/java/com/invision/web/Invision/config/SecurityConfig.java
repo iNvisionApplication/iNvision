@@ -22,19 +22,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .userDetailsService(customUserDetailsService)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/assets/**",   // <-- Broad catch-all for anything starting with /assets
+                                "/loans/**",    // <-- Broad catch-all for anything starting with /loans
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**"
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/uploads/**",
-                                "/favicon.ico",
-                                "/login",
-                                "/register"
+                                "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                "/login", "/register",
+                                "/assets/**",   // <-- Changed to broad catch-all
+                                "/loans/**",    // <-- Changed to broad catch-all
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .userDetailsService(customUserDetailsService)
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("username")
@@ -44,16 +50,13 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
-                        .invalidateHttpSession(true) // Clears session data on logout
-                        .deleteCookies("JSESSIONID") // Deletes the session cookie
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
                 .sessionManagement(session -> session
-
                         .sessionFixation(fixation -> fixation.newSession())
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-
-
                         .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")

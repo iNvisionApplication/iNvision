@@ -1,5 +1,6 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.LoanPeriod;
 import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -39,6 +40,10 @@ public class Loan {
     private LoanStatus status;
 
     private LocalDateTime checkoutDate;
+
+    @NotNull
+    @Enumerated(EnumType.ORDINAL)
+    private LoanPeriod loanPeriod;
 
     private LocalDateTime dueDate;
 

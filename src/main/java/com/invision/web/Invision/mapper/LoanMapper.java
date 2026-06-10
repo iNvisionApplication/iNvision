@@ -35,7 +35,7 @@ public class LoanMapper {
         System.out.println("User: " + loan.getUser());
 
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
-                loan.getRequestDate(),loan.getStatus(),loan.getDueDate());
+                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod());
     }
 
     public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO){
@@ -45,7 +45,7 @@ public class LoanMapper {
         User user = userRepository.findById(requestDTO.userId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + requestDTO.userId()));
 
-        return Loan.builder().asset(asset).user(user).requestDate(LocalDateTime.now()).status(LoanStatus.PENDING)
+        return Loan.builder().asset(asset).user(user).requestDate(LocalDateTime.now()).status(LoanStatus.PENDING).description(requestDTO.description()).loanPeriod(requestDTO.loanPeriod())
                 .build();
     }
 

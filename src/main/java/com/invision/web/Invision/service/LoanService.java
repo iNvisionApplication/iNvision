@@ -60,6 +60,7 @@ public class LoanService {
         LoanStatus oldStatus = loan.getStatus();
         loan.setStatus(actionDTO.loanStatus());
 
+
         Asset asset = loan.getAsset();
         String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
 
@@ -67,6 +68,7 @@ public class LoanService {
         if (actionDTO.loanStatus() == LoanStatus.APPROVED) {
             if (asset != null) {
                 asset.setStatus(AssetStatus.LOANED);
+                loan.setDueDate(LocalDateTime.now().plusDays(loan.getLoanPeriod().ordinal()));
                 assetRepository.save(asset);
             }
             auditLogService.logCheckOut(getCurrentUserId(), loanId, assetInfo);
@@ -92,7 +94,7 @@ public class LoanService {
         loanRepository.save(loan);
 
         // Audit log registration for initial request creation
-        auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
+        //auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
 
         return loanMapper.loanToLoanResponseDTO(loan);
     }

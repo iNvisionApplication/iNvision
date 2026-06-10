@@ -20,7 +20,7 @@ public class LoanController {
 
     private final LoanService loanService;
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<LoanResponseDTO> requestLoan(
             @RequestBody LoanRequestDTO loanRequestDTO) {
 
@@ -60,7 +60,7 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getUserLoans(userId));
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
         return ResponseEntity.ok(loanService.getAllLoans());
     }

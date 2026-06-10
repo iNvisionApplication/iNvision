@@ -39,11 +39,11 @@ public class AssetService {
     private final AssetMapper assetMapper;
     private final AuditLogService auditLogService;
 
-    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO, Long userId){
+    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO){
         Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
         assetRepository.save(asset);
 
-        auditLogService.logCreate(userId, EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
+        //auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
