@@ -10,21 +10,24 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, Long> {
 
+    Optional<Asset> findBySerialNumber(String serialNumber);
+
+    boolean existsBySerialNumber(String serialNumber);
+
     @Query("SELECT a FROM Asset a WHERE " +
-            "(:title IS NULL OR LOWER(CAST(a.title AS text)) LIKE LOWER(CONCAT('%', CAST(:title AS text), '%'))) AND " +
+            "(:title IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
             "(:category IS NULL OR a.category = :category) AND " +
             "(:status IS NULL OR a.status = :status) AND " +
-            "(:location IS NULL OR LOWER(CAST(a.location AS text)) LIKE LOWER(CONCAT('%', CAST(:location AS text), '%'))) AND " +
+            "(:location IS NULL OR LOWER(a.location) LIKE LOWER(CONCAT('%', :location, '%'))) AND " +
             "(:condition IS NULL OR a.condition = :condition)")
-    List<Asset> searchAndFilterAssets(
-            @Param("title") String title,
-            @Param("category") Category category,
-            @Param("status") AssetStatus status,
-            @Param("location") String location,
-            @Param("condition") Condition condition
-    );
+    List<Asset> searchAndFilterAssets(@Param("title") String title,
+                                      @Param("category") Category category,
+                                      @Param("status") AssetStatus status,
+                                      @Param("location") String location,
+                                      @Param("condition") Condition condition);
 }

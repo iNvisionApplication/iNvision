@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assets")  //added a package for apis
+@RequestMapping("/api/assets")
 public class AssetController {
 
     private final AssetService assetService;
@@ -71,24 +71,18 @@ public class AssetController {
 
     // Delete an asset
     @DeleteMapping("/{assetId}")
-    public ResponseEntity<String> deleteAsset(
-            @PathVariable Long assetId) {
-
+    public ResponseEntity<String> deleteAsset(@PathVariable Long assetId) {
         assetService.deleteAsset(assetId);
         return ResponseEntity.ok("Asset deleted successfully with ID: " + assetId);
     }
 
-    // Bulk Import CSV
+    // Bulk Import CSV - removed try-catch to let GlobalExceptionHandler work
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadCSV(
             @RequestPart("file") MultipartFile file,
-            @RequestHeader("X-User-Id") Long userId) {
-        try {
-            assetService.bulkImportAssets(file, userId);
-            return ResponseEntity.ok("CSV imported successfully");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to process CSV: " + e.getMessage());
-        }
+            @RequestHeader("X-User-Id") Long userId) throws Exception {
+
+        assetService.bulkImportAssets(file, userId);
+        return ResponseEntity.ok("CSV imported successfully");
     }
 }
