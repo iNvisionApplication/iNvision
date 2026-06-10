@@ -24,8 +24,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                "/assets/**",   // <-- Broad catch-all for anything starting with /assets
-                                "/loans/**",    // <-- Broad catch-all for anything starting with /loans
+                                "/api/assets/**",   // <-- Broad catch-all for anything starting with /assets
+                                "/api/loans/**",    // <-- Broad catch-all for anything starting with /loans
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**"
                         )
@@ -34,8 +34,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
-                                "/assets/**",   // <-- Changed to broad catch-all
-                                "/loans/**",    // <-- Changed to broad catch-all
+                                "/api/assets/**",
+                                "/api/loans/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
                         .anyRequest().authenticated()

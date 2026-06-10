@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/loans") //added a package for apis
+@RequestMapping("/api/loans")
 @RequiredArgsConstructor
 public class LoanController {
 
