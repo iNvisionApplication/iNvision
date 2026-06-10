@@ -55,7 +55,7 @@ public class AssetService {
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
         asset.setTitle(assetDetails.title());
-        asset.setCategory(Category.valueOf(assetDetails.category()));
+        asset.setCategory(assetDetails.category());
         asset.setSerialNumber(assetDetails.serialNumber());
         asset.setAcquisitionDate(assetDetails.acquisitionDate());
         asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
@@ -162,7 +162,7 @@ public class AssetService {
     }
 
     @Transactional
-    public void bulkImportAssets(MultipartFile file, Long userId) throws Exception {
+    public void bulkImportAssets(MultipartFile file) throws Exception {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         List<String> errors = new ArrayList<>();
         List<Asset> assets = new ArrayList<>();
@@ -229,7 +229,7 @@ public class AssetService {
 
             if (!assets.isEmpty()) {
                 assetRepository.saveAll(assets);
-                auditLogService.logCreate(userId, EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
+                auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
@@ -244,8 +244,8 @@ public class AssetService {
                 .getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getId(); // Returns your actual logged-in user's database ID
+            return userDetails.getId();
         }
-        return null; // System or unauthenticated action
+        return null;
     }
 }

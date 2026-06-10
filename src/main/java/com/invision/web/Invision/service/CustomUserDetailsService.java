@@ -1,5 +1,6 @@
 package com.invision.web.Invision.service;
 
+import com.invision.web.Invision.config.CustomUserDetails; // Make sure this import matches your custom class location
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
@@ -23,10 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .roles(user.getRole().name())
-                .build();
+        // CRITICAL FIX: Wrap your database user entity in your custom details object
+        return new CustomUserDetails(user);
     }
 }

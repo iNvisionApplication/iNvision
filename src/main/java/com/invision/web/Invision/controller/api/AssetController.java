@@ -4,6 +4,7 @@ import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class AssetController {
         return ResponseEntity.ok(asset);
     }
 
-    // Advanced search and filter with query parameters (GET request)
+
     @GetMapping("/search")
     public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets(
             @RequestParam(required = false) String title,
@@ -53,7 +54,7 @@ public class AssetController {
 
     @PostMapping
     public ResponseEntity<AssetResponseDTO> createAsset(
-            @RequestBody AssetRequestDTO assetRequestDTO) {
+            @Valid @RequestBody AssetRequestDTO assetRequestDTO) {
 
         AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
@@ -63,7 +64,7 @@ public class AssetController {
     @PutMapping("/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
-            @RequestBody AssetRequestDTO assetDetails) {
+            @Valid @RequestBody AssetRequestDTO assetDetails) {
 
         String result = assetService.updateAsset(assetId, assetDetails);
         return ResponseEntity.ok(result);
@@ -81,14 +82,45 @@ public class AssetController {
     // Bulk Import CSV
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadCSV(
-            @RequestPart("file") MultipartFile file,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestPart("file") MultipartFile file) {
+
+        // 1. Guard Clause: Check if the file wrapper is empty
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to process CSV: Uploaded file is empty.");
+        }
+
+        // 2. Metadata Check: Extract content type and file name extensions
+        String contentType = file.getContentType();
+        String filename = file.getOriginalFilename();
+
+        // 3. Strict Extension Validation
+        // Checks standard mime types ("text/csv" or "application/vnd.ms-excel" for some OS variants)
+        boolean isValidMimeType = contentType != null &&
+                (contentType.equalsIgnoreCase("text/csv") ||
+                        contentType.equalsIgnoreCase("application/vnd.ms-excel"));
+
+        boolean isValidExtension = filename != null && filename.toLowerCase().endsWith(".csv");
+
+        if (!isValidMimeType && !isValidExtension) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to process CSV: Only standard .csv files are permitted.");
+        }
+
+        // 4. File Size Guard Clause (e.g., Reject files larger than 5MB to prevent memory exhaustion)
+        long maxBytes = 5 * 1024 * 1024;
+        if (file.getSize() > maxBytes) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to process CSV: File size exceeds the maximum allowed limit of 5MB.");
+        }
+
         try {
-            assetService.bulkImportAssets(file, userId);
+            assetService.bulkImportAssets(file);
             return ResponseEntity.ok("CSV imported successfully");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to process CSV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to process CSV: " + e.getMessage());
         }
     }
 }

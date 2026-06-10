@@ -1,19 +1,23 @@
-package com.invision.web.Invision.controller.apis;
+package com.invision.web.Invision.controller.api;
 
+import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.exceptions.EmailAlreadyExistsException;
 import com.invision.web.Invision.exceptions.PasswordMismatchException;
 import com.invision.web.Invision.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import java.util.Objects;
 
+import java.util.Objects;
 
 @Controller
 @RequiredArgsConstructor
@@ -26,6 +30,41 @@ public class AuthController {
         return "redirect:/login";
     }
 
+    @GetMapping("/test")
+    public String showTestPage(Model model) {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication == null) {
+            model.addAttribute("authStatus", "No Authentication Object Found");
+            model.addAttribute("principalClass", "N/A");
+            model.addAttribute("username", "None");
+            model.addAttribute("currentUserId", null);
+        } else {
+            Object principal = authentication.getPrincipal();
+
+            model.addAttribute("authStatus", authentication.isAuthenticated() ? "Authenticated" : "Not Authenticated");
+            model.addAttribute("principalClass", principal.getClass().getName());
+            model.addAttribute("username", authentication.getName());
+
+            if (principal instanceof com.invision.web.Invision.config.CustomUserDetails userDetails) {
+                model.addAttribute("currentUserId", userDetails.getId());
+            } else {
+                model.addAttribute("currentUserId", null);
+            }
+        }
+        return "dashboard/test";
+    }
+
+    private Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+        return null;
+    }
+
     @GetMapping("/login")
     public String login() {
         return "auth/login";
@@ -33,84 +72,36 @@ public class AuthController {
 
     @GetMapping("/register")
     public String registerForm(Model model) {
-
-        model.addAttribute("nameError", null);
-        model.addAttribute("departmentError", null);
-        model.addAttribute("emailError", null);
-        model.addAttribute("passwordError", null);
-        model.addAttribute("confirmPasswordError", null);
-        model.addAttribute("roleError", null);
-
+        // Pass an empty DTO object so Thymeleaf form fields can bind to it out-of-the-box
+        model.addAttribute("userRegistrationDTO", new UserRegistrationDTO("", null, "", "", "", Role.BORROWER));
         return "auth/register";
     }
 
     @PostMapping("/register")
     public String registerSubmit(
-            @RequestParam String name,
-            @RequestParam String department,
-            @RequestParam String email,
-            @RequestParam String password,
-            @RequestParam String confirmPassword,
+            @Valid @ModelAttribute("userRegistrationDTO") UserRegistrationDTO dto, // Automatically validates the DTO fields
+            BindingResult bindingResult, // Holds validation errors automatically
             Model model) {
 
-        boolean hasError = false;
-
-        if (name == null || name.isBlank()) {
-            model.addAttribute("nameError", "Name is required");
-            hasError = true;
+        // 1. Check for DTO validation annotation failures (@NotBlank, @Email, @Size)
+        if (bindingResult.hasErrors()) {
+            return "auth/register"; // Thymeleaf handles displaying these errors automatically via #fields
         }
 
-        if (department == null || department.isBlank()) {
-            model.addAttribute("departmentError", "Department is required");
-            hasError = true;
-        }
-
-        if (email == null || email.isBlank() || !email.contains("@")) {
-            model.addAttribute("emailError", "Valid email is required");
-            hasError = true;
-        }
-
-        if (password == null || password.length() < 8) {
-            model.addAttribute("passwordError", "Password must be at least 8 characters");
-            hasError = true;
-        }
-
-
-        if (!Objects.equals(password, confirmPassword)) {
-            model.addAttribute("confirmPasswordError", "Passwords do not match");
-            hasError = true;
-        }
-
-
-        if (hasError) {
-            model.addAttribute("name", name);
-            model.addAttribute("department", department);
-            model.addAttribute("email", email);
+        // 2. Cross-field validation manual check (Confirm Password)
+        if (!Objects.equals(dto.password(), dto.confirmPassword())) {
+            bindingResult.rejectValue("confirmPassword", "error.userRegistrationDTO", "Passwords do not match");
             return "auth/register";
         }
-
-        UserRegistrationDTO dto = new UserRegistrationDTO(
-                name,
-                Department.valueOf(department),
-                email,
-                password,
-                confirmPassword,
-                Role.BORROWER
-        );
 
         try {
+            // 3. Attempt service registration
             userService.registerUser(dto);
         } catch (EmailAlreadyExistsException ex) {
-            model.addAttribute("emailError", ex.getMessage());
-            model.addAttribute("name", name);
-            model.addAttribute("department", department);
-            model.addAttribute("email", email);
+            bindingResult.rejectValue("email", "error.userRegistrationDTO", ex.getMessage());
             return "auth/register";
         } catch (PasswordMismatchException ex) {
-            model.addAttribute("confirmPasswordError", ex.getMessage());
-            model.addAttribute("name", name);
-            model.addAttribute("department", department);
-            model.addAttribute("email", email);
+            bindingResult.rejectValue("confirmPassword", "error.userRegistrationDTO", ex.getMessage());
             return "auth/register";
         }
 
