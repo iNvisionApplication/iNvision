@@ -53,9 +53,15 @@ public class AssetController {
 
     @PostMapping
     public ResponseEntity<AssetResponseDTO> createAsset(
-            @RequestBody AssetRequestDTO assetRequestDTO) {
+            @RequestBody AssetRequestDTO assetRequestDTO,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
-        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
+        // If userId is not provided in header, you can get it from security context
+        if (userId == null) {
+            userId = assetService.getCurrentUserId();
+        }
+
+        AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO, userId);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
     }
 
@@ -80,7 +86,12 @@ public class AssetController {
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadCSV(
             @RequestPart("file") MultipartFile file,
-            @RequestHeader("X-User-Id") Long userId) throws Exception {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) throws Exception {
+
+        // If userId is not provided in header, you can get it from security context
+        if (userId == null) {
+            userId = assetService.getCurrentUserId();
+        }
 
         assetService.bulkImportAssets(file, userId);
         return ResponseEntity.ok("CSV imported successfully");
