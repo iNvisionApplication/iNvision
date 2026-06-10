@@ -1,4 +1,4 @@
-package com.invision.web.Invision.controller.apis;
+package com.invision.web.Invision.controller.api;
 
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/loans") //added a package for apis
+@RequestMapping("/loans") //added a package for apis
 @RequiredArgsConstructor
 public class LoanController {
 
