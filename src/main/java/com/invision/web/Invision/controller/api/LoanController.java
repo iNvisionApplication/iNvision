@@ -1,4 +1,4 @@
-package com.invision.web.Invision.controller.apis;
+package com.invision.web.Invision.controller.api;
 
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;

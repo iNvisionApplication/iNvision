@@ -1,8 +1,7 @@
-package com.invision.web.Invision.controller.apis;
+package com.invision.web.Invision.controller.api;
 
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
-import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
