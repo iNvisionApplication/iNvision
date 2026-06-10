@@ -10,6 +10,8 @@ public class DashboardController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
+        model.addAttribute("currentUri", "/dashboard");
+
         model.addAttribute("totalAssets",     0);
         model.addAttribute("availableAssets", 0);
         model.addAttribute("activeLoans",     0);
