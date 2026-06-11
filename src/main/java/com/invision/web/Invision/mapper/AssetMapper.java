@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class AssetMapper {
 
     public AssetResponseDTO AssetToAssetResponseDTO(Asset asset){
-        return new AssetResponseDTO(asset.getTitle(), String.valueOf(asset.getCategory()), asset.getSerialNumber(), asset.getAcquisitionDate(),asset.getCost().doubleValue(),
+        return new AssetResponseDTO(asset.getAssetId(), asset.getTitle(), String.valueOf(asset.getCategory()), asset.getSerialNumber(), asset.getAcquisitionDate(),asset.getCost().doubleValue(),
                 asset.getLocation(),asset.getCondition(), asset.getPhotoPath(),asset.getStatus());
     }
 

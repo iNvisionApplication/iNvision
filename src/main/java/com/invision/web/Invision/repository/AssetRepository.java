@@ -29,4 +29,6 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             @Param("location") String location,
             @Param("condition") Condition condition
     );
+
+    long countByStatus(AssetStatus status);
 }
