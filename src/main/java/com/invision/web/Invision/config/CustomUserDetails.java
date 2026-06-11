@@ -16,9 +16,9 @@ public class CustomUserDetails implements UserDetails {
         this.user = user;
     }
 
-    // This is the magic method that lets you grab the database ID later!
+
     public Long getId() {
-        return user.getUserId(); // Adjust based on your User entity's primary key getter
+        return user.getUserId();
     }
 
     @Override
@@ -34,9 +34,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getUsername(); // or user.getEmail() depending on your login strategy
-    }
-
+        return user.getUsername();}
     @Override
     public boolean isAccountNonExpired() { return true; }
 
