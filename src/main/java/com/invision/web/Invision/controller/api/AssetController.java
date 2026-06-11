@@ -60,6 +60,22 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
+    // Retire an asset
+    @DeleteMapping("/{assetId}")
+    public ResponseEntity<String> retireAsset(
+            @PathVariable Long assetId) {
+
+        assetService.retireAsset(assetId);
+        return ResponseEntity.ok("Asset retired successfully with ID: " + assetId);
+    }
+
+    // Get only AVAILABLE and LOANED assets (explicit)
+    @GetMapping("/available-loaned")
+    public ResponseEntity<List<AssetResponseDTO>> getAvailableAndLoanedAssets() {
+        List<AssetResponseDTO> assets = assetService.getAvailAndLoanedAssests();
+        return ResponseEntity.ok(assets);
+    }
+
     // Bulk Import CSV
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadCSV( @RequestPart("file") MultipartFile file) {

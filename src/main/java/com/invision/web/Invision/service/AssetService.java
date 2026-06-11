@@ -115,6 +115,8 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
+
+
     public List<AssetResponseDTO> searchAndFilterAssets(AssetSearchRequest searchRequest) {
         List<Asset> assets = assetRepository.searchAndFilterAssets(
                 searchRequest.title(),
