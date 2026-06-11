@@ -43,7 +43,7 @@ public class AssetService {
         Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
         assetRepository.save(asset);
 
-        //auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
+        auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
@@ -233,8 +233,6 @@ public class AssetService {
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
-        } catch (Exception e) {
-            throw e;
         }
     }
 

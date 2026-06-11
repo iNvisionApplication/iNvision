@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assets")  //added a package for apis
+@RequestMapping("/api/assets")
 public class AssetController {
 
     private final AssetService assetService;

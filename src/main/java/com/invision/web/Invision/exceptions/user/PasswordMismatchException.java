@@ -1,4 +1,4 @@
-package com.invision.web.Invision.exceptions;
+package com.invision.web.Invision.exceptions.user;
 
 public class PasswordMismatchException extends RuntimeException {
 
