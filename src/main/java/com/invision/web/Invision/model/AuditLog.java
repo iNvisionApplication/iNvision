@@ -4,20 +4,21 @@ import com.invision.web.Invision.enums.ActionLog;
 import com.invision.web.Invision.enums.EntityType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 @Table(name="audit_log")
 @Entity
 @Data
+@Builder
 public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long logId;
 
-    @ManyToOne
-    @JoinColumn(name="user_id")
-    private User user;
+    @Column(name="user_id")
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     private EntityType entityType; //asset or loan

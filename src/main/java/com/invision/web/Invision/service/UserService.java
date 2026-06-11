@@ -1,6 +1,7 @@
 package com.invision.web.Invision.service;
 
-import com.invision.web.Invision.dto.UserRegistrationDto;
+import com.invision.web.Invision.dto.UserLoginDTO;
+import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.model.User;
@@ -21,13 +22,26 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional(readOnly = true)
+    public User loginUser(UserLoginDTO loginRequest) {
+
+        User user = userRepository.findByEmail(loginRequest.email())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password."));
+
+        if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password.");
+        }
+
+        return user;
+    }
+
     @Transactional
-    public String registerUser(UserRegistrationDto request){
+    public String registerUser(UserRegistrationDTO request){
 
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(Department.valueOf(request.department()));
+        user.setDepartment(request.department());
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -37,12 +51,12 @@ public class UserService {
     }
 
     @Transactional
-    public String createStaffUser(UserRegistrationDto request) {
+    public String createStaffUser(UserRegistrationDTO request) {
 
         User user = new User();
 
         user.setName(request.name());
-        user.setDepartment(Department.valueOf(request.department()));
+        user.setDepartment(request.department());
         user.setEmail(request.email());
 
         user.setPassword(passwordEncoder.encode(request.password()));

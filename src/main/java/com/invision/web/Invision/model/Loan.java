@@ -1,5 +1,6 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.LoanPeriod;
 import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -32,17 +33,26 @@ public class Loan {
     @NotNull
     private LocalDateTime requestDate;
 
+    @NotNull
+    private String description;
+
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
     private LocalDateTime checkoutDate;
+
+    @NotNull
+    @Enumerated(EnumType.ORDINAL)
+    private LoanPeriod loanPeriod;
 
     private LocalDateTime dueDate;
 
     private LocalDateTime returnDate;
 
     public boolean isOverdue(){
-        return checkoutDate.isBefore(LocalDateTime.now());
+        return dueDate != null
+                && dueDate.isBefore(LocalDateTime.now())
+                && status != LoanStatus.RETURNED;
     }
 
 }
