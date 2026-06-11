@@ -11,7 +11,7 @@ public record AssetRequestDTO(
         @Pattern(regexp = "^[a-zA-Z0-9\\s-_]+$", message = "Title contains invalid characters")
         String title,
 
-        @NotBlank(message = "Category is required")
+        @NotNull(message = "Category is required")
         Category category,
 
         @NotBlank(message = "Serial number is required")

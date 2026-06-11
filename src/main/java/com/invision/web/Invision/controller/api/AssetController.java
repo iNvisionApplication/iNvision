@@ -61,7 +61,7 @@ public class AssetController {
     }
 
     // Update an existing asset
-    @PutMapping("/{assetId}")
+    @PutMapping("/update/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
             @Valid @RequestBody AssetRequestDTO assetDetails) {
@@ -70,13 +70,20 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
-    // Delete an asset
-    @DeleteMapping("/{assetId}")
-    public ResponseEntity<String> deleteAsset(
+    // Retire an asset
+    @PutMapping("/retire/{assetId}")
+    public ResponseEntity<String> retireAsset(
             @PathVariable Long assetId) {
 
-        assetService.deleteAsset(assetId);
-        return ResponseEntity.ok("Asset deleted successfully with ID: " + assetId);
+        assetService.retireAsset(assetId);
+        return ResponseEntity.ok("Asset retired successfully with ID: " + assetId);
+    }
+
+    // Get only AVAILABLE and LOANED assets
+    @GetMapping("/available-loaned")
+    public ResponseEntity<List<AssetResponseDTO>> getAvailableAndLoanedAssets() {
+        List<AssetResponseDTO> assets = assetService.getAvailAndLoanedAssests();
+        return ResponseEntity.ok(assets);
     }
 
     // Bulk Import CSV

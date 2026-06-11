@@ -73,15 +73,25 @@ public class AssetService {
         return "Asset updated.";
     }
 
-    public void deleteAsset(Long assetId){
+    // Retire an Asset
+    public void retireAsset(Long assetId){
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
-        String snapshot = "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber();
+        String oldStatus = String.valueOf(asset.getStatus());
+        asset.setStatus(AssetStatus.RETIRED);
+        assetRepository.save(asset);
 
-        assetRepository.deleteById(assetId);
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId,oldStatus, "Status: Retired");
+    }
 
-        auditLogService.logDelete(getCurrentUserId(), EntityType.ASSET, assetId, snapshot);
+    // Get Available And Loaned Assets
+    public List<AssetResponseDTO> getAvailAndLoanedAssests(){
+        return assetRepository.searchAndFilterAssets(null, null, null, null, null)
+                .stream()
+                .filter(asset -> asset.getStatus() != AssetStatus.RETIRED)
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
     }
 
     public List<AssetResponseDTO> getAllAssets() {
@@ -118,7 +128,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
-    // UPDATED METHOD - Main search and filter logic
+    // Main search and filter logic
     public List<AssetResponseDTO> searchAndFilterAssets(
             String title,
             String category,
