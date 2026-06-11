@@ -32,36 +32,26 @@ public class AssetController {
 
     // Get asset by ID
     @GetMapping("/{assetId}")
-    public ResponseEntity<AssetResponseDTO> getAssetById(@PathVariable Long assetId) {
+    public ResponseEntity<AssetResponseDTO> getAssetById(@Valid @PathVariable Long assetId) {
         AssetResponseDTO asset = assetService.getAssetById(assetId);
         return ResponseEntity.ok(asset);
     }
 
 
     @GetMapping("/search")
-    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets(
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) String condition) {
-
-        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(
-                title, category, status, location, condition
-        );
+    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets( @Valid AssetSearchRequest searchRequest) {
+        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(searchRequest);
         return ResponseEntity.ok(assets);
     }
 
     @PostMapping
-    public ResponseEntity<AssetResponseDTO> createAsset(
-            @Valid @RequestBody AssetRequestDTO assetRequestDTO) {
-
+    public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO assetRequestDTO) {
         AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
     }
 
-    // Update an existing asset
-    @PutMapping("/update/{assetId}")
+
+    @PutMapping("/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
             @Valid @RequestBody AssetRequestDTO assetDetails) {
@@ -70,28 +60,10 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
-    // Retire an asset
-    @PutMapping("/retire/{assetId}")
-    public ResponseEntity<String> retireAsset(
-            @PathVariable Long assetId) {
-
-        assetService.retireAsset(assetId);
-        return ResponseEntity.ok("Asset retired successfully with ID: " + assetId);
-    }
-
-    // Get only AVAILABLE and LOANED assets
-    @GetMapping("/available-loaned")
-    public ResponseEntity<List<AssetResponseDTO>> getAvailableAndLoanedAssets() {
-        List<AssetResponseDTO> assets = assetService.getAvailAndLoanedAssests();
-        return ResponseEntity.ok(assets);
-    }
-
     // Bulk Import CSV
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadCSV(
-            @RequestPart("file") MultipartFile file) {
+    public ResponseEntity<String> uploadCSV( @RequestPart("file") MultipartFile file) {
 
-        // 1. Guard Clause: Check if the file wrapper is empty
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Failed to process CSV: Uploaded file is empty.");

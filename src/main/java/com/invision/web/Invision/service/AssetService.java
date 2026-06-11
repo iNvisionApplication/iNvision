@@ -239,12 +239,19 @@ public class AssetService {
 
             if (!assets.isEmpty()) {
                 assetRepository.saveAll(assets);
-                auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
+                Long currentUserId = getCurrentUserId();
+                for (Asset a : assets) {
+                    String details = "Bulk imported via CSV. Title: " + a.getTitle() + " | S/N: " + (a.getSerialNumber() != null ? a.getSerialNumber() : "N/A");
+                    auditLogService.logCreate(currentUserId, EntityType.ASSET, a.getAssetId(), details);
+                }
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
+        } catch (Exception e) {
+            throw e;
         }
     }
+
 
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
