@@ -6,6 +6,7 @@ import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class LoanController {
 
     @PostMapping
     public ResponseEntity<LoanResponseDTO> requestLoan(
-            @RequestBody LoanRequestDTO loanRequestDTO) {
+            @Valid @RequestBody LoanRequestDTO loanRequestDTO) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO));
     }

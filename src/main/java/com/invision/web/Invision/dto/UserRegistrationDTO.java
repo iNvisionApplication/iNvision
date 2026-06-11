@@ -5,11 +5,11 @@ import com.invision.web.Invision.enums.Role;
 import jakarta.validation.constraints.*;
 
 public record UserRegistrationDTO(
-
         @NotBlank(message = "Full name is required")
+        @Size(max = 100, message = "Name must not exceed 100 characters")
         String name,
 
-        @NotBlank(message = "Department is required")
+        @NotNull(message = "Department is required") // Enums use @NotNull, not @NotBlank
         Department department,
 
         @Email(message = "Enter a valid email address")
@@ -18,9 +18,11 @@ public record UserRegistrationDTO(
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters")
+        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{8,}$",
+                message = "Password must contain at least one letter and one number")
         String password,
 
-        // confirmPassword is not in the record therefore validated separately in controller
+
         String confirmPassword,
 
         Role role

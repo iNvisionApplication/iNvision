@@ -94,7 +94,7 @@ public class LoanService {
         loanRepository.save(loan);
 
         // Audit log registration for initial request creation
-        //auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
+        auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
 
         return loanMapper.loanToLoanResponseDTO(loan);
     }
