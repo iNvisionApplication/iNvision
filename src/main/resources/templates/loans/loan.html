@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+
+<head>
+    <title>My Loans</title>
+</head>
+
+<body>
+<section>
+
+    <input type="hidden" id="currentUserId" th:value="${currentUserId}"/>
+
+    <div class="page-header">
+        <div>
+            <h2 class="page-heading">My Loans</h2>
+            <p class="page-subtitle">View your loan history and current loan requests.</p>
+        </div>
+
+        <a th:href="@{/assets}" class="btn btn-primary">
+            Request Loan
+        </a>
+    </div>
+
+    <div class="table-card">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Loan ID</th>
+                <th>Asset</th>
+                <th>Description</th>
+                <th>Request Date</th>
+                <th>Due Date</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+
+            <tbody id="loanHistoryBody">
+            <tr>
+                <td colspan="6">Loading loans...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</section>
+</body>
+</html>

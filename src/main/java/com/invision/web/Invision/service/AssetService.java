@@ -1,89 +1,268 @@
 package com.invision.web.Invision.service;
 
-import com.invision.web.Invision.Repository.AssetRepository;
+import com.invision.web.Invision.config.CustomUserDetails;
+import com.invision.web.Invision.enums.EntityType;
+import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
+import com.invision.web.Invision.dto.AssetSearchRequest;
+import com.invision.web.Invision.mapper.AssetMapper;
 import com.invision.web.Invision.model.Asset;
-import com.invision.web.Invision.model.Category;
-import com.invision.web.Invision.model.AssetStatus;
-import com.invision.web.Invision.model.Condition;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.invision.web.Invision.enums.Category;
+import com.invision.web.Invision.enums.AssetStatus;
+import com.invision.web.Invision.enums.Condition;
 
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class AssetService {
-    @Autowired
-    private AssetRepository assetRepository;
 
-    // ADD ASSET using DTOs
+    private final AssetRepository assetRepository;
+    private final AssetMapper assetMapper;
+    private final AuditLogService auditLogService;
+
     public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO){
+        Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
+        assetRepository.save(asset);
 
-        //Convert DTO to entity
-      Asset asset = new Asset();
-      asset.setTitle(assetRequestDTO.title());
-      asset.setCategory(Category.valueOf(assetRequestDTO.category())); // Converted string to enum for @jakarta.validation.constraint
-      asset.setSerialNumber(assetRequestDTO.serialNumber());
-      asset.setAcquisitionDate(assetRequestDTO.acquisitionDate());
-      asset.setCost(BigDecimal.valueOf((assetRequestDTO.cost())));    //Converted Double to BigDecimal
-      asset.setLocation(assetRequestDTO.location());
-      asset.setCondition(assetRequestDTO.condition());
-      asset.setPhotoPath(assetRequestDTO.path());
-      asset.setStatus(AssetStatus.AVAILABLE);
+        auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
-      // Save entity
-        Asset savedAsset = assetRepository.save(asset);
-
-        // Converting entity to ResponseDTO
-        return new AssetResponseDTO(
-                savedAsset.getTitle(),
-                savedAsset.getCategory(),
-                savedAsset.getSerialNumber(),
-                savedAsset.getAcquisitionDate(),
-                savedAsset.getCost(),
-                savedAsset.getLocation(),
-                savedAsset.getCondition(),
-                savedAsset.getPhotoPath(),
-                savedAsset.getStatus()
-        );
+        return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    // UPDATE ASSET using DTOs
-    public AssetResponseDTO updateAsset(Long assetId, AssetRequestDTO assetDetails){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " +assetId));
+                .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
-        // Update entity fields from DTOs
+        String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
+
         asset.setTitle(assetDetails.title());
-        asset.setCategory(Category.valueOf(assetDetails.category()));
+        asset.setCategory(assetDetails.category());
         asset.setSerialNumber(assetDetails.serialNumber());
-        asset.setAcquisitionDate(LocalDateTime.parse(String.valueOf(assetDetails.acquisitionDate())));
+        asset.setAcquisitionDate(assetDetails.acquisitionDate());
         asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
         asset.setLocation(assetDetails.location());
-        asset.setCondition(Condition.valueOf(String.valueOf(assetDetails.condition())));
+        asset.setCondition(assetDetails.condition());
+        asset.setStatus(AssetStatus.AVAILABLE);
         asset.setPhotoPath(assetDetails.path());
 
-        Asset updatedAsset = assetRepository.save(asset);
+        assetRepository.save(asset);
 
-        return new AssetResponseDTO(
-                updatedAsset.getTitle(),
-                updatedAsset.getCategory(),
-                updatedAsset.getSerialNumber(),
-                updatedAsset.getAcquisitionDate(),
-                updatedAsset.getCost(),
-                updatedAsset.getLocation(),
-                updatedAsset.getCondition(),
-                updatedAsset.getPhotoPath(),
-                updatedAsset.getStatus()
-        );
+        String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
+
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId, oldDetails, newDetails);
+
+        return "Asset updated.";
     }
 
-    // DELETE ASSET
-    public void deleteAsset(Long assetId){
-        assetRepository.deleteById(assetId);
+    // Retire an Asset
+    public void retireAsset(Long assetId){
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
+
+        String oldStatus = String.valueOf(asset.getStatus());
+        asset.setStatus(AssetStatus.RETIRED);
+        assetRepository.save(asset);
+
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId,oldStatus, "Status: Retired");
+    }
+
+    // Get Available And Loaned Assets
+    public List<AssetResponseDTO> getAvailAndLoanedAssests(){
+        return assetRepository.searchAndFilterAssets(null, null, null, null, null)
+                .stream()
+                .filter(asset -> asset.getStatus() != AssetStatus.RETIRED)
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AssetResponseDTO> getAllAssets() {
+        List<Asset> assets = assetRepository.findAll();
+        return assets.stream()
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public AssetResponseDTO getAssetById(Long assetId) {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new RuntimeException("Asset not found with ID: " + assetId));
+        return assetMapper.AssetToAssetResponseDTO(asset);
+    }
+
+    public List<AssetResponseDTO> getAssetsByCategory(String category) {
+        Category categoryEnum = Category.valueOf(category);
+        List<Asset> assets = assetRepository.searchAndFilterAssets(null, categoryEnum, null, null, null);
+        return assets.stream()
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+
+
+    public List<AssetResponseDTO> searchAndFilterAssets(AssetSearchRequest searchRequest) {
+        List<Asset> assets = assetRepository.searchAndFilterAssets(
+                searchRequest.title(),
+                searchRequest.category(),
+                searchRequest.status(),
+                searchRequest.location(),
+                searchRequest.condition()
+        );
+        return assets.stream()
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Main search and filter logic
+    public List<AssetResponseDTO> searchAndFilterAssets(
+            String title,
+            String category,
+            String status,
+            String location,
+            String condition) {
+
+        Category categoryEnum = null;
+        if (category != null && !category.isEmpty()) {
+            try {
+                categoryEnum = Category.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid category - will return empty results
+            }
+        }
+
+        AssetStatus statusEnum = null;
+        if (status != null && !status.isEmpty()) {
+            try {
+                statusEnum = AssetStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid status - will return empty results
+            }
+        }
+
+        Condition conditionEnum = null;
+        if (condition != null && !condition.isEmpty()) {
+            try {
+                conditionEnum = Condition.valueOf(condition.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid condition - will return empty results
+            }
+        }
+
+        List<Asset> assets = assetRepository.searchAndFilterAssets(
+                title, categoryEnum, statusEnum, location, conditionEnum
+        );
+        return assets.stream()
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void bulkImportAssets(MultipartFile file) throws Exception {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<String> errors = new ArrayList<>();
+        List<Asset> assets = new ArrayList<>();
+
+        try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader().withTrim());
+
+            int rowNumber = 1;
+            for (CSVRecord record : csvParser) {
+                rowNumber++;
+                try {
+                    String title = record.get("title");
+                    String categoryStr = record.get("category");
+                    String serialNumber = record.get("serial_number");
+                    String acquisitionDateStr = record.get("acquisition_date");
+                    String costStr = record.get("cost");
+                    String location = record.get("location");
+                    String conditionStr = record.get("condition");
+                    String statusStr = record.get("status");
+                    String photoPath = record.get("photo_path");
+
+                    if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Title is required");
+                    if (categoryStr == null || categoryStr.trim().isEmpty()) throw new IllegalArgumentException("Category is required");
+                    if (location == null || location.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
+                    if (statusStr == null || statusStr.trim().isEmpty()) throw new IllegalArgumentException("Status is required");
+
+                    LocalDateTime acquisitionDate = null;
+                    if (acquisitionDateStr != null && !acquisitionDateStr.trim().isEmpty()) {
+                        acquisitionDate = LocalDateTime.parse(acquisitionDateStr.trim(), formatter);
+                    }
+
+                    BigDecimal cost = null;
+                    if (costStr != null && !costStr.trim().isEmpty()) {
+                        cost = new BigDecimal(costStr.trim());
+                    }
+
+                    if (serialNumber != null && serialNumber.trim().isEmpty()) serialNumber = null;
+                    if (photoPath != null && photoPath.trim().isEmpty()) photoPath = null;
+
+                    Asset asset = Asset.builder()
+                            .title(title.trim())
+                            .category(Category.valueOf(categoryStr.trim().toUpperCase()))
+                            .serialNumber(serialNumber)
+                            .acquisitionDate(acquisitionDate)
+                            .cost(cost)
+                            .location(location.trim())
+                            .condition(conditionStr != null && !conditionStr.trim().isEmpty() ? Condition.valueOf(conditionStr.trim().toUpperCase()) : null)
+                            .status(AssetStatus.valueOf(statusStr.trim().toUpperCase()))
+                            .photoPath(photoPath)
+                            .build();
+
+                    assets.add(asset);
+
+                } catch (IllegalArgumentException e) {
+                    errors.add(String.format("Row %d: %s", rowNumber, e.getMessage()));
+                } catch (Exception e) {
+                    errors.add(String.format("Row %d: Unexpected error - %s", rowNumber, e.getMessage()));
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                throw new RuntimeException("Bulk import failed with " + errors.size() + " error(s):\n" + String.join("\n", errors));
+            }
+
+            if (!assets.isEmpty()) {
+                assetRepository.saveAll(assets);
+                Long currentUserId = getCurrentUserId();
+                for (Asset a : assets) {
+                    String details = "Bulk imported via CSV. Title: " + a.getTitle() + " | S/N: " + (a.getSerialNumber() != null ? a.getSerialNumber() : "N/A");
+                    auditLogService.logCreate(currentUserId, EntityType.ASSET, a.getAssetId(), details);
+                }
+            } else {
+                throw new RuntimeException("No valid assets to import");
+            }
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+
+    public Long getCurrentUserId() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+        return null;
     }
 }

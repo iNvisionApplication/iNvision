@@ -1,14 +1,22 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.LoanPeriod;
+import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Table(name="loan")
 @Entity
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Loan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,12 +33,24 @@ public class Loan {
     @NotNull
     private LocalDateTime requestDate;
 
+    @NotNull
+    private String description;
+
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
     private LocalDateTime checkoutDate;
 
+    @NotNull
+    @Enumerated(EnumType.ORDINAL)
+    private LoanPeriod loanPeriod;
+
     private LocalDateTime dueDate;
 
     private LocalDateTime returnDate;
+
+    public boolean isOverdue(){
+        return checkoutDate.isBefore(LocalDateTime.now());
+    }
+
 }

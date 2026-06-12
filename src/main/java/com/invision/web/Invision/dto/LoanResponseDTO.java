@@ -1,9 +1,11 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.AssetStatus;
+import com.invision.web.Invision.enums.LoanPeriod;
+import com.invision.web.Invision.enums.LoanStatus;
+
 
 import java.time.LocalDateTime;
 
-public record LoanResponseDTO(String loanId, String assetTitle, String borrowerName, LocalDateTime requestDate,
-                              AssetStatus status,LocalDateTime dueDate) {
+public record LoanResponseDTO(String loanId, String assetTitle, String description, LocalDateTime requestDate,
+                              LoanStatus status, LoanPeriod loanPeriod) {
 }
