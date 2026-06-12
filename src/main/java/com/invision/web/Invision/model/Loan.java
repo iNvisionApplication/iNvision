@@ -23,11 +23,11 @@ public class Loan {
     private Long loanId;
 
     @ManyToOne
-    @JoinColumn(name ="assetId")
+    @JoinColumn(name ="asset_id")
     private Asset asset;
 
     @ManyToOne
-    @JoinColumn(name ="userId")
+    @JoinColumn(name ="user_id")
     private User user;
 
     @NotNull
