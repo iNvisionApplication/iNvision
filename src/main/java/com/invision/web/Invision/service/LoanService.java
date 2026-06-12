@@ -1,15 +1,12 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
-import com.invision.web.Invision.dto.LoanActionDTO;
+import com.invision.web.Invision.dto.LoanStatusDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.*;
 import com.invision.web.Invision.exception.asset.AssetNotFoundException;
-import com.invision.web.Invision.exception.loan.BadLoanRequest;
-import com.invision.web.Invision.exception.loan.ExceededLoanRequestException;
-import com.invision.web.Invision.exception.loan.InvalidLoanStatusChangeException;
-import com.invision.web.Invision.exception.loan.NoLoansFoundException;
+import com.invision.web.Invision.exception.loan.*;
 import com.invision.web.Invision.exception.user.UserNotFoundException;
 import com.invision.web.Invision.mapper.LoanMapper;
 import com.invision.web.Invision.model.Asset;
@@ -92,7 +89,7 @@ public class LoanService {
     }
 
     @Transactional
-    public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO){
+    public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
 
@@ -167,8 +164,6 @@ public class LoanService {
         }
 
         Loan saved = loanRepository.saveAndFlush(loan);
-        System.out.println("Saved loan user: " + saved.getUser());
-        System.out.println("Saved loan asset: " + saved.getAsset());
         return loanMapper.loanToLoanResponseDTO(saved);
     }
 

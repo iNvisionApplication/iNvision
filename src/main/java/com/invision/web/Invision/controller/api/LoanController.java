@@ -3,6 +3,7 @@ package com.invision.web.Invision.controller.api;
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
+import com.invision.web.Invision.dto.LoanStatusDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
@@ -30,7 +31,7 @@ public class LoanController {
     @PatchMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> updateLoanStatus(
             @PathVariable("id") Long loanId,
-            @RequestBody LoanActionDTO actionDTO) {
+            @RequestBody LoanStatusDTO actionDTO) {
 
         return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO));
     }

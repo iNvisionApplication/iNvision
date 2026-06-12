@@ -28,4 +28,7 @@ public interface LoanRepository extends JpaRepository<Loan,Long> {
     List<Loan> findByDueDateBeforeAndStatusNotAndUserUserId(LocalDateTime now, LoanStatus status, Long userId);
 
     int countByUserUserIdAndStatus(Long userId, LoanStatus status);
+
+    long countByStatus(LoanStatus status);
+    List<Loan> findTop5ByOrderByRequestDateDesc();
 }
