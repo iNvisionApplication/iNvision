@@ -1,4 +1,4 @@
-package com.invision.web.Invision.exceptions.asset;
+package com.invision.web.Invision.exception.asset;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {

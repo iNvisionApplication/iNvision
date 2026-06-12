@@ -6,7 +6,6 @@ import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,7 @@ public class LoanController {
 
     @PostMapping
     public ResponseEntity<LoanResponseDTO> requestLoan(
-            @Valid @RequestBody LoanRequestDTO loanRequestDTO) {
+            @RequestBody LoanRequestDTO loanRequestDTO) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO));
     }
@@ -36,14 +35,24 @@ public class LoanController {
         return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO));
     }
 
-    @GetMapping("/overdue_loans")
+    @GetMapping("/status")
+    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(@RequestBody LoanStatus status){
+        return ResponseEntity.ok(loanService.getAllLoansByStatus(status));
+    }
+
+    @GetMapping("/overdue")
     public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans(){
         return ResponseEntity.ok(loanService.getAllOverdueLoans());
     }
 
-    @GetMapping("/overdue_loans/department/{department}")
+    @GetMapping("/overdue/department/{department}")
     public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByDepartment(@PathVariable Department department){
         return ResponseEntity.ok(loanService.getOverdueLoansByDepartment(department));
+    }
+
+    @GetMapping("/overdue/{userId}")
+    public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
+        return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
     }
 
     @GetMapping("/asset/{assetId}")
@@ -65,10 +74,6 @@ public class LoanController {
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
         return ResponseEntity.ok(loanService.getAllLoans());
     }
-
-
-
-
 
 
 }
