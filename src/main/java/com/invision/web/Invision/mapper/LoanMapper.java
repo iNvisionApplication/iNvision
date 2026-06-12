@@ -24,15 +24,9 @@ public class LoanMapper {
     private final LoanRepository loanRepository;
     private final UserRepository userRepository;
 
-    //AssetRepository assetRepository;
-    //UserRepository userRepository;
-    //LoanRepository loanRepository;
 
 
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
-        System.out.println("Mapping loan: " + loan.getLoanId());
-        System.out.println("Asset: " + loan.getAsset());
-        System.out.println("User: " + loan.getUser());
 
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getDescription(),
                 loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod()); // Fix : description was mapping as username
@@ -48,14 +42,5 @@ public class LoanMapper {
         return Loan.builder().asset(asset).user(user).requestDate(LocalDateTime.now()).status(LoanStatus.PENDING).description(requestDTO.description()).loanPeriod(requestDTO.loanPeriod())
                 .build();
     }
-
-//    public Loan LoanActionDTOToLoan(Long loanId, LoanActionDTO actionDTO){
-//        Loan loan = loanRepository.findById(loanId)
-//                .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + loanId));
-//
-//        loan.setStatus(actionDTO.loanStatus());
-//
-//        return loan;
-//    }
 
 }
