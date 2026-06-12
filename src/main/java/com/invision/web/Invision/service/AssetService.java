@@ -39,11 +39,11 @@ public class AssetService {
     private final AssetMapper assetMapper;
     private final AuditLogService auditLogService;
 
-    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO, Long userId){
+    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO){
         Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
         assetRepository.save(asset);
 
-        auditLogService.logCreate(userId, EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
+        auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
@@ -55,7 +55,7 @@ public class AssetService {
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
         asset.setTitle(assetDetails.title());
-        asset.setCategory(Category.valueOf(assetDetails.category()));
+        asset.setCategory(assetDetails.category());
         asset.setSerialNumber(assetDetails.serialNumber());
         asset.setAcquisitionDate(assetDetails.acquisitionDate());
         asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
@@ -162,7 +162,7 @@ public class AssetService {
     }
 
     @Transactional
-    public void bulkImportAssets(MultipartFile file, Long userId) throws Exception {
+    public void bulkImportAssets(MultipartFile file) throws Exception {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         List<String> errors = new ArrayList<>();
         List<Asset> assets = new ArrayList<>();
@@ -229,7 +229,11 @@ public class AssetService {
 
             if (!assets.isEmpty()) {
                 assetRepository.saveAll(assets);
-                auditLogService.logCreate(userId, EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
+                Long currentUserId = getCurrentUserId();
+                for (Asset a : assets) {
+                    String details = "Bulk imported via CSV. Title: " + a.getTitle() + " | S/N: " + (a.getSerialNumber() != null ? a.getSerialNumber() : "N/A");
+                    auditLogService.logCreate(currentUserId, EntityType.ASSET, a.getAssetId(), details);
+                }
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
@@ -238,14 +242,15 @@ public class AssetService {
         }
     }
 
+
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
                 .getContext()
                 .getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getId(); // Returns your actual logged-in user's database ID
+            return userDetails.getId();
         }
-        return null; // System or unauthenticated action
+        return null;
     }
 }

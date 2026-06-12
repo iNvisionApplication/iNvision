@@ -5,6 +5,7 @@ import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.*;
+import com.invision.web.Invision.exception.asset.AssetNotFoundException;
 import com.invision.web.Invision.exception.loan.BadLoanRequest;
 import com.invision.web.Invision.exception.loan.ExceededLoanRequestException;
 import com.invision.web.Invision.exception.loan.InvalidLoanStatusChangeException;
@@ -34,7 +35,7 @@ public class LoanService {
     private final AssetRepository assetRepository;
     private final AuditLogService auditLogService; // Inject custom helper
     private final UserRepository userRepository;
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
 
     public List<LoanResponseDTO> getAllOverdueLoans(){
         return loanRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), LoanStatus.RETURNED)
@@ -71,7 +72,7 @@ public class LoanService {
 
 
     public List<LoanResponseDTO> getLoansByAsset(Long assetId){
-       List<Loan> loans =  loanRepository.findByAssetAssetId(assetId);
+        List<Loan> loans =  loanRepository.findByAssetAssetId(assetId);
 
         if(loans.isEmpty()){
             throw new NoLoansFoundException("This asset has no loan history");
@@ -90,12 +91,17 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanActionDTO actionDTO){
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
 
+        if (loan.getDescription() == null) {
+            loan.setDescription("No description provided");
+        }
+
         LoanStatus oldStatus = loan.getStatus();
-        loan.setStatus(actionDTO.loanStatus());
+
 
 
         Asset asset = loan.getAsset();
@@ -103,11 +109,13 @@ public class LoanService {
 
         //Check if loan is closed
         if(loan.getStatus() == LoanStatus.RETURNED || loan.getStatus() == LoanStatus.REJECTED){
-            throw new InvalidLoanStatusChangeException("Can not change statius of closed loan");
+            throw new InvalidLoanStatusChangeException("Cannot change status of closed loan");
         }else {
             loan.setStatus(actionDTO.loanStatus());
 
         }
+
+        loan.setStatus(actionDTO.loanStatus());
 
         //Change asset availiblity status
         if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
@@ -116,15 +124,23 @@ public class LoanService {
             assert asset != null;
             asset.setStatus(AssetStatus.AVAILABLE);
             assetRepository.save(asset);
-        } else if (actionDTO.loanStatus() == LoanStatus.APPROVED){
+        } else if (actionDTO.loanStatus() == LoanStatus.APPROVED) {
             loan.setCheckoutDate(LocalDateTime.now());
-            User user = userRepository.findById(getCurrentUserId()).get();
-            String message = "Your Loan for asset: " +loan.getAsset().getTitle() + " was approved.";
-            String email = user.getEmail();
-            notificationService.sendAll(loan.getUser().getUserId(),email, NotificationReason.LOAN_STATUS_UPDATED,message);
-            assert asset != null;
+            int days = loan.getLoanPeriod() != null ? loan.getLoanPeriod().getDays() : 14;
+            loan.setDueDate(LocalDateTime.now().plusDays(days));
             asset.setStatus(AssetStatus.LOANED);
             assetRepository.save(asset);
+
+            User user = loan.getUser();
+            notificationService.sendAll(user.getUserId(), user.getEmail(),
+                    NotificationReason.LOAN_STATUS_UPDATED,
+                    "Your loan for " + asset.getTitle() + " was approved.");
+
+        } else if (actionDTO.loanStatus() == LoanStatus.REJECTED) {
+            User user = loan.getUser();
+            notificationService.sendAll(user.getUserId(), user.getEmail(),
+                    NotificationReason.LOAN_STATUS_UPDATED,
+                    "Your loan for " + asset.getTitle() + " was rejected.");
         }
 
 
@@ -150,16 +166,26 @@ public class LoanService {
             auditLogService.logUpdate(getCurrentUserId(), EntityType.LOAN, loanId, "Status: " + oldStatus, "Status: " + actionDTO.loanStatus());
         }
 
-        return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
+        Loan saved = loanRepository.saveAndFlush(loan);
+        System.out.println("Saved loan user: " + saved.getUser());
+        System.out.println("Saved loan asset: " + saved.getAsset());
+        return loanMapper.loanToLoanResponseDTO(saved);
     }
 
     public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
         Loan loan = loanMapper.loanRequestDTOToLoan(requestDTO);
+        Asset asset = assetRepository.findById(loan.getAsset().getAssetId()).orElseThrow(
+                () -> new AssetNotFoundException("This asset does not exist")
+        );
         if(loanRepository.countByUserUserIdAndStatus(loan.getUser().getUserId(),LoanStatus.APPROVED)>5){
             throw new ExceededLoanRequestException("User had too many active loans");
         }
         if (loanRepository.existsByUserUserIdAndAssetAssetIdAndStatusIn(requestDTO.userId(), requestDTO.assetId(),List.of(LoanStatus.APPROVED, LoanStatus.PENDING))) {
             throw new BadLoanRequest("User has already has an active loan for this asset");
+        }
+
+        if(asset.getStatus() == AssetStatus.RETIRED){
+            throw new BadLoanRequest("This asset is retired and cannot be loaned");
         }
 
         // Audit log registration for initial request creation

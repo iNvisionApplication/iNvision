@@ -18,7 +18,7 @@ public class AssetMapper {
     }
 
     public Asset AssetRequestDTOToAsset(AssetRequestDTO requestDTO){
-        return Asset.builder().title(requestDTO.title()).category(Category.valueOf(requestDTO.category()))
+        return Asset.builder().title(requestDTO.title()).category(requestDTO.category())
                 .serialNumber(requestDTO.serialNumber()).acquisitionDate(requestDTO.acquisitionDate()).cost(new BigDecimal(requestDTO.cost())).location(requestDTO.location()).condition(requestDTO.condition()).status(AssetStatus.AVAILABLE).photoPath(requestDTO.path()).build();
     }
 }

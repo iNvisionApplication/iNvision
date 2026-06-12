@@ -52,7 +52,7 @@ public class LoanController {
 
     @GetMapping("/overdue/{userId}")
     public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
-      return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
+        return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
     }
 
     @GetMapping("/asset/{assetId}")
@@ -74,10 +74,6 @@ public class LoanController {
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
         return ResponseEntity.ok(loanService.getAllLoans());
     }
-
-
-
-
 
 
 }
