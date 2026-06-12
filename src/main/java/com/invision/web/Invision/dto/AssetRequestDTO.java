@@ -2,6 +2,7 @@ package com.invision.web.Invision.dto;
 
 import com.invision.web.Invision.enums.Category;
 import com.invision.web.Invision.enums.Condition;
+import com.invision.web.Invision.enums.Location;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
@@ -25,13 +26,12 @@ public record AssetRequestDTO(
         @PositiveOrZero(message = "Cost cannot be negative")
         double cost,
 
-        @NotBlank(message = "Location is required")
-        @Size(max = 100, message = "Location name is too long")
-        String location,
+        @NotNull(message = "Location is required")
+        Location location,
 
         @NotNull(message = "Condition is required")
         Condition condition,
 
-        @NotBlank(message = "File path is required")
+        @Size(message = "File path is required")
         String path
 ) {}

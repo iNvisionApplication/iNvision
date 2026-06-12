@@ -1,6 +1,6 @@
 package com.invision.web.Invision.repository;
 
-import com.invision.web.Invision.dto.AssetResponseDTO;
+import com.invision.web.Invision.enums.Location;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.enums.Category;
 import com.invision.web.Invision.enums.AssetStatus;
@@ -11,22 +11,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     @Query("SELECT a FROM Asset a WHERE " +
-            "(:title IS NULL OR LOWER(CAST(a.title AS text)) LIKE LOWER(CONCAT('%', CAST(:title AS text), '%'))) AND " +
+            "(:title IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
             "(:category IS NULL OR a.category = :category) AND " +
             "(:status IS NULL OR a.status = :status) AND " +
-            "(:location IS NULL OR LOWER(CAST(a.location AS text)) LIKE LOWER(CONCAT('%', CAST(:location AS text), '%'))) AND " +
+            "(:location IS NULL OR a.location = :location) AND " +
             "(:condition IS NULL OR a.condition = :condition)")
     List<Asset> searchAndFilterAssets(
             @Param("title") String title,
             @Param("category") Category category,
             @Param("status") AssetStatus status,
-            @Param("location") String location,
+            @Param("location") Location location,
             @Param("condition") Condition condition
     );
 

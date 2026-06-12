@@ -1,16 +1,13 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
-import com.invision.web.Invision.enums.EntityType;
+import com.invision.web.Invision.enums.*;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.mapper.AssetMapper;
 import com.invision.web.Invision.model.Asset;
-import com.invision.web.Invision.enums.Category;
-import com.invision.web.Invision.enums.AssetStatus;
-import com.invision.web.Invision.enums.Condition;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -27,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,7 +84,7 @@ public class AssetService {
     }
 
     // Get Available And Loaned Assets
-    public List<AssetResponseDTO> getAvailAndLoanedAssests(){
+    public List<AssetResponseDTO> getAvailAndLoanedAssets(){
         return assetRepository.searchAndFilterAssets(null, null, null, null, null)
                 .stream()
                 .filter(asset -> asset.getStatus() != AssetStatus.RETIRED)
@@ -115,8 +113,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
-
-
+    // Search with AssetSearchRequest object (POST endpoint)
     public List<AssetResponseDTO> searchAndFilterAssets(AssetSearchRequest searchRequest) {
         List<Asset> assets = assetRepository.searchAndFilterAssets(
                 searchRequest.title(),
@@ -125,12 +122,23 @@ public class AssetService {
                 searchRequest.location(),
                 searchRequest.condition()
         );
+
+        // Apply relevance sorting if searching by title
+        if (searchRequest.title() != null && !searchRequest.title().trim().isEmpty()) {
+            String searchTerm = searchRequest.title().toLowerCase().trim();
+            assets.sort((a1, a2) -> {
+                int score1 = calculateRelevance(a1.getTitle(), searchTerm);
+                int score2 = calculateRelevance(a2.getTitle(), searchTerm);
+                return Integer.compare(score2, score1);
+            });
+        }
+
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // Main search and filter logic
+    // Search with String parameters (GET endpoint)
     public List<AssetResponseDTO> searchAndFilterAssets(
             String title,
             String category,
@@ -156,6 +164,15 @@ public class AssetService {
             }
         }
 
+        Location locationEnum = null;
+        if (location != null && !location.isEmpty()) {
+            try {
+                locationEnum = Location.valueOf(location.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid location - will return empty results
+            }
+        }
+
         Condition conditionEnum = null;
         if (condition != null && !condition.isEmpty()) {
             try {
@@ -166,11 +183,37 @@ public class AssetService {
         }
 
         List<Asset> assets = assetRepository.searchAndFilterAssets(
-                title, categoryEnum, statusEnum, location, conditionEnum
+                title, categoryEnum, statusEnum, locationEnum, conditionEnum
         );
+
+        // Apply relevance sorting if searching by title
+        if (title != null && !title.trim().isEmpty()) {
+            String searchTerm = title.toLowerCase().trim();
+            assets.sort((a1, a2) -> {
+                int score1 = calculateRelevance(a1.getTitle(), searchTerm);
+                int score2 = calculateRelevance(a2.getTitle(), searchTerm);
+                return Integer.compare(score2, score1);
+            });
+        }
+
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Calculate relevance score for sorting search results
+    private int calculateRelevance(String title, String searchTerm) {
+        if (title == null) return 0;
+        String lowerTitle = title.toLowerCase();
+
+        if (lowerTitle.equals(searchTerm)) {
+            return 100;  // Exact match - highest relevance
+        } else if (lowerTitle.startsWith(searchTerm)) {
+            return 50;   // Starts with - medium relevance
+        } else if (lowerTitle.contains(searchTerm)) {
+            return 10;   // Contains - lower relevance
+        }
+        return 0;
     }
 
     @Transactional
@@ -191,14 +234,14 @@ public class AssetService {
                     String serialNumber = record.get("serial_number");
                     String acquisitionDateStr = record.get("acquisition_date");
                     String costStr = record.get("cost");
-                    String location = record.get("location");
+                    String locationStr = record.get("location");
                     String conditionStr = record.get("condition");
                     String statusStr = record.get("status");
                     String photoPath = record.get("photo_path");
 
                     if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Title is required");
                     if (categoryStr == null || categoryStr.trim().isEmpty()) throw new IllegalArgumentException("Category is required");
-                    if (location == null || location.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
+                    if (locationStr == null || locationStr.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
                     if (statusStr == null || statusStr.trim().isEmpty()) throw new IllegalArgumentException("Status is required");
 
                     LocalDateTime acquisitionDate = null;
@@ -214,13 +257,22 @@ public class AssetService {
                     if (serialNumber != null && serialNumber.trim().isEmpty()) serialNumber = null;
                     if (photoPath != null && photoPath.trim().isEmpty()) photoPath = null;
 
+                    // Convert location string to enum
+                    Location locationEnum;
+                    try {
+                        locationEnum = Location.valueOf(locationStr.trim());
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Invalid location value: " + locationStr + ". Valid values: " +
+                                java.util.Arrays.toString(Location.values()));
+                    }
+
                     Asset asset = Asset.builder()
                             .title(title.trim())
                             .category(Category.valueOf(categoryStr.trim().toUpperCase()))
                             .serialNumber(serialNumber)
                             .acquisitionDate(acquisitionDate)
                             .cost(cost)
-                            .location(location.trim())
+                            .location(locationEnum)
                             .condition(conditionStr != null && !conditionStr.trim().isEmpty() ? Condition.valueOf(conditionStr.trim().toUpperCase()) : null)
                             .status(AssetStatus.valueOf(statusStr.trim().toUpperCase()))
                             .photoPath(photoPath)
@@ -253,7 +305,6 @@ public class AssetService {
             throw e;
         }
     }
-
 
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder

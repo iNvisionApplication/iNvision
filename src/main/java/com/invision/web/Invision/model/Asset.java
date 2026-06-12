@@ -3,6 +3,7 @@ package com.invision.web.Invision.model;
 import com.invision.web.Invision.enums.AssetStatus;
 import com.invision.web.Invision.enums.Category;
 import com.invision.web.Invision.enums.Condition;
+import com.invision.web.Invision.enums.Location;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -44,8 +45,9 @@ public class Asset {
     private BigDecimal cost;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "location")
-    private String location;
+    private Location location;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "condition")
