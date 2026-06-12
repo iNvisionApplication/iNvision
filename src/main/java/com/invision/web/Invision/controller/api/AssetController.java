@@ -51,7 +51,7 @@ public class AssetController {
     }
 
 
-    @PutMapping("/{assetId}")
+    @PutMapping("/update/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
             @Valid @RequestBody AssetRequestDTO assetDetails) {
@@ -61,7 +61,7 @@ public class AssetController {
     }
 
     // Retire an asset
-    @DeleteMapping("/{assetId}")
+    @PutMapping("/retire/{assetId}")
     public ResponseEntity<String> retireAsset(
             @PathVariable Long assetId) {
 
