@@ -34,8 +34,8 @@ public class LoanMapper {
         System.out.println("Asset: " + loan.getAsset());
         System.out.println("User: " + loan.getUser());
 
-        return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
-                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod());
+        return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getDescription(),
+                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod()); // Fix : description was mapping as username
     }
 
     public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO){
