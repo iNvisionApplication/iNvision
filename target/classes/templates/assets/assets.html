@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+
+<head>
+    <title>Available Assets</title>
+</head>
+
+<body>
+<section>
+
+    <input type="hidden" id="currentUserId" th:value="${currentUserId}"/>
+
+    <div class="page-header">
+        <div>
+            <h2 class="page-heading">Available Assets</h2>
+            <p class="page-subtitle">Choose an asset and submit a loan request.</p>
+        </div>
+
+        <a th:href="@{/loans}" class="btn btn-secondary">
+            Back to My Loans
+        </a>
+    </div>
+
+    <div class="asset-loan-layout">
+
+        <div>
+            <div class="asset-toolbar">
+                <h3>Available for Loan</h3>
+                <span id="assetCount">Loading...</span>
+            </div>
+
+            <div class="asset-grid" id="availableAssetsContainer">
+                <p>Loading available assets...</p>
+            </div>
+        </div>
+
+        <aside class="loan-request-panel" id="loanRequestPanel">
+
+            <h3>Loan Request</h3>
+
+            <div class="selected-asset-box">
+                <span>Selected Asset</span>
+                <strong id="selectedAssetTitle">No asset selected</strong>
+            </div>
+
+            <form id="loanRequestForm">
+
+                <input type="hidden" id="selectedAssetId"/>
+
+                <label for="loanPeriod">Loan Period</label>
+                <select id="loanPeriod" required>
+                    <option value="">Select loan period</option>
+                    <option value="ONE_WEEK">One Week</option>
+                    <option value="TWO_WEEKS">Two Weeks</option>
+                    <option value="THREE_WEEKS">Three Weeks</option>
+                    <option value="FOUR_WEEKS">Four Weeks</option>
+                </select>
+
+                <label for="description">Purpose :</label>
+                <textarea id="description"
+                          rows="5"
+                          placeholder="Explain why you need this asset?"
+                          required></textarea>
+
+                <button type="submit" class="btn btn-primary btn-full" id="submitLoanBtn" disabled>
+                    Select an Asset First
+                </button>
+
+            </form>
+
+        </aside>
+
+    </div>
+
+</section>
+</body>
+</html>

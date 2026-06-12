@@ -1,8 +1,8 @@
 package com.invision.web.Invision.dto;
 
-import com.invision.web.Invision.model.Category;
-import com.invision.web.Invision.model.Condition;
-import com.invision.web.Invision.model.AssetStatus;
+import com.invision.web.Invision.enums.Category;
+import com.invision.web.Invision.enums.Condition;
+import com.invision.web.Invision.enums.AssetStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
