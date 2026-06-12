@@ -27,7 +27,6 @@ public class AuditLog {
     @Enumerated(EnumType.STRING)
     private EntityType entityType; //asset or loan
 
-
     @NotNull
     private Long entityId;
 

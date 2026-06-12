@@ -1,5 +1,6 @@
 package com.invision.web.Invision.repository;
 
+import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.enums.Category;
 import com.invision.web.Invision.enums.AssetStatus;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, Long> {
@@ -27,4 +29,6 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             @Param("location") String location,
             @Param("condition") Condition condition
     );
+
+    long countByStatus(AssetStatus status);
 }

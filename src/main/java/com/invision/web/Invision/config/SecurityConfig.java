@@ -28,13 +28,15 @@ public class SecurityConfig {
                                 "/api/assets/**",
                                 "/api/loans/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/forgot-password/**"
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
+                                "/forgot-password/**",
                                 "/api/assets/**",
                                 "/api/loans/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
