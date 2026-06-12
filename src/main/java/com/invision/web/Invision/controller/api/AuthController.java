@@ -73,7 +73,7 @@ public class AuthController {
     @GetMapping("/register")
     public String registerForm(Model model) {
         // Pass an empty DTO object so Thymeleaf form fields can bind to it out-of-the-box
-        model.addAttribute("userRegistrationDTO", new UserRegistrationDTO("", null, "", "", "", Role.BORROWER));
+        model.addAttribute("userRegistrationDTO", new UserRegistrationDTO("", "", null, "", "", Role.BORROWER));
         return "auth/register";
     }
 
