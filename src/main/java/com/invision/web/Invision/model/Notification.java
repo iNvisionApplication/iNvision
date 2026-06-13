@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 
 @Getter
-public sealed class Notification permits SystemNotification, EmailNotification {
+public class Notification  {
 
     private final Long userId;
     private final NotificationReason reason;

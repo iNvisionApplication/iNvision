@@ -1,5 +1,7 @@
 package com.invision.web.Invision.model;
 
+import com.invision.web.Invision.enums.AssetLoanStatus;
+import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanPeriod;
 import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
@@ -39,14 +41,25 @@ public class Loan {
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
+    @Column(name ="checkout_date")
     private LocalDateTime checkoutDate;
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
     private LoanPeriod loanPeriod;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_department")
+    private Department userDepartment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "asset_loan_status")
+    private AssetLoanStatus assetLoanStatus;
+
+    @Column(name="due_date")
     private LocalDateTime dueDate;
 
+    @Column(name="return_date")
     private LocalDateTime returnDate;
 
     public boolean isOverdue(){

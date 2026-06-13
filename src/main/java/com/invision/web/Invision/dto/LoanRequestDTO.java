@@ -1,7 +1,10 @@
 package com.invision.web.Invision.dto;
 
+import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanPeriod;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.*;
 
 public record LoanRequestDTO(
@@ -18,5 +21,8 @@ public record LoanRequestDTO(
         String description,
 
         @NotNull(message = "Loan period is required")
-        LoanPeriod loanPeriod
+        LoanPeriod loanPeriod,
+
+        @Enumerated(EnumType.STRING)
+        Department department
 ) {}

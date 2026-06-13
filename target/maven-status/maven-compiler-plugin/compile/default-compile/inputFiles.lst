@@ -16,10 +16,12 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanActionDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanRequestDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanResponseDTO.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanStatusDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserLoginDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserRegistrationDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserResponseDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/ActionLog.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/AssetLoanStatus.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/AssetStatus.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/Category.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/Condition.java
@@ -49,6 +51,7 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/AuditLog.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/EmailNotification.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/Loan.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/Notification.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/PasswordResetToken.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/SystemNotification.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/model/User.java

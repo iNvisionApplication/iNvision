@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -91,6 +93,9 @@ public class LoanService {
 
     @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
+        User manager = userRepository.findById(getCurrentUserId())
+                .orElseThrow(() ->  new UserNotFoundException("This user does not exist"));
+        String managerEmail = manager.getEmail();
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
 
@@ -118,27 +123,30 @@ public class LoanService {
         //Change asset availiblity status
         if (actionDTO.loanStatus() == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
-
+            loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
             assert asset != null;
             asset.setStatus(AssetStatus.AVAILABLE);
             assetRepository.save(asset);
-        } else if (actionDTO.loanStatus() == LoanStatus.APPROVED) {
-            loan.setCheckoutDate(LocalDateTime.now());
+        } else if (actionDTO.loanStatus() == LoanStatus.APPROVED ) {
+
             int days = loan.getLoanPeriod() != null ? loan.getLoanPeriod().getDays() : 14;
             loan.setDueDate(LocalDateTime.now().plusDays(days));
+            loan.setAssetLoanStatus(AssetLoanStatus.PENDING_COLLECTION);
+            assert asset != null;
             asset.setStatus(AssetStatus.LOANED);
             assetRepository.save(asset);
 
             User user = loan.getUser();
             notificationService.sendAll(user.getUserId(), user.getEmail(),
                     NotificationReason.LOAN_STATUS_UPDATED,
-                    "Your loan for " + asset.getTitle() + " was approved.");
+                    "Your loan for " + asset.getTitle() + " was approved by" + managerEmail +".");
 
         } else if (actionDTO.loanStatus() == LoanStatus.REJECTED) {
             User user = loan.getUser();
+            loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED);
             notificationService.sendAll(user.getUserId(), user.getEmail(),
                     NotificationReason.LOAN_STATUS_UPDATED,
-                    "Your loan for " + asset.getTitle() + " was rejected.");
+                    "Your loan for " + asset.getTitle() + " was rejected by" + managerEmail +".");
         }
 
 
@@ -168,6 +176,7 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(saved);
     }
 
+    @Transactional
     public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
         Loan loan = loanMapper.loanRequestDTOToLoan(requestDTO);
         Asset asset = assetRepository.findById(loan.getAsset().getAssetId()).orElseThrow(
@@ -184,6 +193,26 @@ public class LoanService {
             throw new BadLoanRequest("This asset is retired and cannot be loaned");
         }
 
+        User requester = userRepository.findById(requestDTO.userId()).orElseThrow(
+                () -> new UserNotFoundException("User does not exist"));
+        List<User> managers = userRepository.findByDepartmentAndRole(requestDTO.department(),Role.MANAGER);
+
+        if (managers.isEmpty()) {
+            throw new BadLoanRequest("No managers found for department: " + requestDTO.department());
+        }
+
+        List<User> copyOfManagers = new ArrayList<>(managers);
+        Collections.shuffle(copyOfManagers);
+
+        notificationService.sendAll(requestDTO.userId(),copyOfManagers.get(0).getEmail()
+                ,NotificationReason.LOAN_REQUEST,
+                "Loan for " + asset.getTitle() + " was request by" + requester.getEmail() +".");
+
+
+        notificationService.sendAll(requestDTO.userId(),copyOfManagers.get(1).getEmail()
+                ,NotificationReason.LOAN_REQUEST,
+                "Loan for " + asset.getTitle() + " was request by" + requester.getEmail() +".");
+
         // Audit log registration for initial request creation
         //auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
 
@@ -199,6 +228,7 @@ public class LoanService {
                 map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    @Transactional
     public List<LoanResponseDTO> getUserLoansByStatus(Long userId, LoanStatus status){
         if(!userRepository.existsById(userId)){
             throw new UserNotFoundException("User does not exist");
@@ -211,6 +241,34 @@ public class LoanService {
         }
         return loans;
     }
+
+        //When borrower returns asset
+    @Transactional
+    public LoanResponseDTO loanActionReturn(Long loanId){
+        Loan loan = loanRepository.findById(loanId).orElseThrow(
+                () -> new NoLoansFoundException("This loan does not exist")
+        );
+            loan.setAssetLoanStatus(AssetLoanStatus.PENDING_RETURN_CONFIRMATION);
+
+        Loan saved = loanRepository.save(loan);
+        System.out.println("Saved loan: " + saved.getLoanId());
+        System.out.println("Asset: " + saved.getAsset());
+        System.out.println("User: " + saved.getUser());
+
+        return loanMapper.loanToLoanResponseDTO(saved);
+    }
+    //When borrower collects asset
+    @Transactional
+    public LoanResponseDTO loanActionCollect(Long loanId){
+        Loan loan = loanRepository.findById(loanId).orElseThrow(
+                () -> new NoLoansFoundException("This loan does not exist")
+        );
+        loan.setAssetLoanStatus(AssetLoanStatus.COLLECTED);
+        loan.setCheckoutDate(LocalDateTime.now());
+        return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
+    }
+
+
 
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder

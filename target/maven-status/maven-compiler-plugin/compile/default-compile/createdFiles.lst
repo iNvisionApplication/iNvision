@@ -5,6 +5,7 @@ com/invision/web/Invision/enums/LoanStatus.class
 com/invision/web/Invision/service/UserService.class
 com/invision/web/Invision/controller/pages/LoanPageController.class
 com/invision/web/Invision/dto/LoanResponseDTO.class
+com/invision/web/Invision/enums/AssetLoanStatus.class
 com/invision/web/Invision/InvisionApplication.class
 com/invision/web/Invision/model/Loan$LoanBuilder.class
 com/invision/web/Invision/exception/asset/DuplicateSerialNumberException.class
@@ -24,6 +25,7 @@ com/invision/web/Invision/enums/LoanPeriod.class
 com/invision/web/Invision/controller/api/AuthController.class
 com/invision/web/Invision/service/AssetService.class
 com/invision/web/Invision/dto/LoanRequestDTO.class
+com/invision/web/Invision/model/Notification.class
 com/invision/web/Invision/model/Asset$AssetBuilder.class
 com/invision/web/Invision/dto/UserResponseDTO.class
 com/invision/web/Invision/config/CustomUserDetails.class
@@ -63,6 +65,7 @@ com/invision/web/Invision/enums/Category.class
 com/invision/web/Invision/exception/user/UserNotFoundException.class
 com/invision/web/Invision/controller/pages/DashboardController.class
 com/invision/web/Invision/model/AuditLog$AuditLogBuilder.class
+com/invision/web/Invision/dto/LoanStatusDTO.class
 com/invision/web/Invision/controller/pages/AssetPageController.class
 com/invision/web/Invision/enums/EntityType.class
 com/invision/web/Invision/controller/api/LoanController.class

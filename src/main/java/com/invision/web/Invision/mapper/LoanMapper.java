@@ -3,6 +3,7 @@ package com.invision.web.Invision.mapper;
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
+import com.invision.web.Invision.enums.AssetLoanStatus;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.enums.LoanStatus;
@@ -33,7 +34,7 @@ public class LoanMapper {
 
 
         return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
-                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod());
+                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod(),loan.getAssetLoanStatus());
     }
 
     public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO){
@@ -43,7 +44,10 @@ public class LoanMapper {
         User user = userRepository.findById(requestDTO.userId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + requestDTO.userId()));
 
-        return Loan.builder().asset(asset).user(user).requestDate(LocalDateTime.now()).status(LoanStatus.PENDING).description(requestDTO.description()).loanPeriod(requestDTO.loanPeriod())
+        return Loan.builder().asset(asset).user(user).requestDate(LocalDateTime.now()).
+                status(LoanStatus.PENDING).description(requestDTO.description()).
+                loanPeriod(requestDTO.loanPeriod()).userDepartment(user.getDepartment()).
+                assetLoanStatus(AssetLoanStatus.PENDING_APPROVAL)
                 .build();
     }
 
