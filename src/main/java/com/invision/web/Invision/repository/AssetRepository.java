@@ -16,11 +16,11 @@ import java.util.List;
 public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     @Query("SELECT a FROM Asset a WHERE " +
-            "(:title IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
-            "(:category IS NULL OR a.category = :category) AND " +
-            "(:status IS NULL OR a.status = :status) AND " +
-            "(:location IS NULL OR a.location = :location) AND " +
-            "(:condition IS NULL OR a.condition = :condition)")
+            "(CAST(:title AS string) IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%'))) AND " +
+            "(CAST(:category AS string) IS NULL OR a.category = :category) AND " +
+            "(CAST(:status AS string) IS NULL OR a.status = :status) AND " +
+            "(CAST(:location AS string) IS NULL OR a.location = :location) AND " +
+            "(CAST(:condition AS string) IS NULL OR a.condition = :condition)")
     List<Asset> searchAndFilterAssets(
             @Param("title") String title,
             @Param("category") Category category,
