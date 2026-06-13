@@ -3,6 +3,7 @@ package com.invision.web.Invision.controller.api;
 import com.invision.web.Invision.dto.LoanActionDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
+import com.invision.web.Invision.dto.LoanStatusDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
@@ -30,19 +31,29 @@ public class LoanController {
     @PatchMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> updateLoanStatus(
             @PathVariable("id") Long loanId,
-            @RequestBody LoanActionDTO actionDTO) {
+            @RequestBody LoanStatusDTO actionDTO) {
 
         return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO));
     }
 
-    @GetMapping("/overdue_loans")
+    @GetMapping("/status")
+    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(@RequestBody LoanStatus status){
+        return ResponseEntity.ok(loanService.getAllLoansByStatus(status));
+    }
+
+    @GetMapping("/overdue")
     public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans(){
         return ResponseEntity.ok(loanService.getAllOverdueLoans());
     }
 
-    @GetMapping("/overdue_loans/department/{department}")
+    @GetMapping("/overdue/department/{department}")
     public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByDepartment(@PathVariable Department department){
         return ResponseEntity.ok(loanService.getOverdueLoansByDepartment(department));
+    }
+
+    @GetMapping("/overdue/{userId}")
+    public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
+        return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
     }
 
     @GetMapping("/asset/{assetId}")
@@ -64,10 +75,6 @@ public class LoanController {
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
         return ResponseEntity.ok(loanService.getAllLoans());
     }
-
-
-
-
 
 
 }

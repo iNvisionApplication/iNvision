@@ -22,13 +22,13 @@ public class Loan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long loanId;
 
-    @ManyToOne
-    @JoinColumn(name ="assetId")
-    private Asset asset;
-
-    @ManyToOne
-    @JoinColumn(name ="userId")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "asset_id")
+    private Asset asset;
 
     @NotNull
     private LocalDateTime requestDate;
@@ -50,7 +50,9 @@ public class Loan {
     private LocalDateTime returnDate;
 
     public boolean isOverdue(){
-        return checkoutDate.isBefore(LocalDateTime.now());
+        return dueDate != null
+                && dueDate.isBefore(LocalDateTime.now())
+                && status != LoanStatus.RETURNED;
     }
 
 }

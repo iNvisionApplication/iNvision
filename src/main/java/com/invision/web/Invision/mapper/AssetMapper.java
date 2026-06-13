@@ -13,12 +13,12 @@ import java.math.BigDecimal;
 public class AssetMapper {
 
     public AssetResponseDTO AssetToAssetResponseDTO(Asset asset){
-        return new AssetResponseDTO(asset.getTitle(), String.valueOf(asset.getCategory()), asset.getSerialNumber(), asset.getAcquisitionDate(),asset.getCost().doubleValue(),
+        return new AssetResponseDTO(asset.getAssetId(), asset.getTitle(), asset.getCategory(), asset.getSerialNumber(), asset.getAcquisitionDate(),asset.getCost(),
                 asset.getLocation(),asset.getCondition(), asset.getPhotoPath(),asset.getStatus());
     }
 
     public Asset AssetRequestDTOToAsset(AssetRequestDTO requestDTO){
-        return Asset.builder().title(requestDTO.title()).category(Category.valueOf(requestDTO.category()))
+        return Asset.builder().title(requestDTO.title()).category(requestDTO.category())
                 .serialNumber(requestDTO.serialNumber()).acquisitionDate(requestDTO.acquisitionDate()).cost(new BigDecimal(requestDTO.cost())).location(requestDTO.location()).condition(requestDTO.condition()).status(AssetStatus.AVAILABLE).photoPath(requestDTO.path()).build();
     }
 }

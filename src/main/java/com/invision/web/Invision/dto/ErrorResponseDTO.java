@@ -1,4 +1,12 @@
 package com.invision.web.Invision.dto;
 
-public record ErrorResponseDTO() {
+import java.time.LocalDateTime;
+
+public record ErrorResponseDTO(
+        int status,
+        String code,
+        String message,
+        String path,
+        LocalDateTime timestamp
+) {
 }

@@ -2,9 +2,6 @@ package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.enums.EntityType;
-import com.invision.web.Invision.exceptions.asset.BulkImportException;
-import com.invision.web.Invision.exceptions.asset.DuplicateSerialNumberException;
-import com.invision.web.Invision.exceptions.asset.ResourceNotFoundException;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
@@ -42,48 +39,23 @@ public class AssetService {
     private final AssetMapper assetMapper;
     private final AuditLogService auditLogService;
 
-    // Helper method to check for duplicate serial numbers
-    private void checkDuplicateSerialNumber(String serialNumber, Long excludeAssetId) {
-        // Skip check if no serial number provided
-        if (serialNumber == null || serialNumber.trim().isEmpty()) {
-            return;
-        }
-
-        // Look for existing asset with this serial number
-        java.util.Optional<Asset> existingAsset = assetRepository.findBySerialNumber(serialNumber);
-
-        if (existingAsset.isPresent()) {
-            // If we're updating, allow the same asset to keep its serial number
-            if (excludeAssetId == null || !existingAsset.get().getAssetId().equals(excludeAssetId)) {
-                throw new DuplicateSerialNumberException(serialNumber);
-            }
-        }
-    }
-
-    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO, Long userId){
-        // Check for duplicate serial number BEFORE saving
-        checkDuplicateSerialNumber(assetRequestDTO.serialNumber(), null);
-
+    public AssetResponseDTO addAsset(AssetRequestDTO assetRequestDTO){
         Asset asset = assetMapper.AssetRequestDTOToAsset(assetRequestDTO);
         assetRepository.save(asset);
 
-        auditLogService.logCreate(userId, EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
+        auditLogService.logCreate(getCurrentUserId(), EntityType.ASSET, asset.getAssetId(), "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber());
 
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
     public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
-        // First check if asset exists
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Asset not found with ID: " + assetId));
-
-        // Check for duplicate serial number (excluding this asset)
-        checkDuplicateSerialNumber(assetDetails.serialNumber(), assetId);
+                .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
         asset.setTitle(assetDetails.title());
-        asset.setCategory(Category.valueOf(assetDetails.category()));
+        asset.setCategory(assetDetails.category());
         asset.setSerialNumber(assetDetails.serialNumber());
         asset.setAcquisitionDate(assetDetails.acquisitionDate());
         asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
@@ -101,15 +73,25 @@ public class AssetService {
         return "Asset updated.";
     }
 
-    public void deleteAsset(Long assetId){
+    // Retire an Asset
+    public void retireAsset(Long assetId){
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Asset not found with ID: " + assetId));
+                .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
-        String snapshot = "Title: " + asset.getTitle() + " | S/N: " + asset.getSerialNumber();
+        String oldStatus = String.valueOf(asset.getStatus());
+        asset.setStatus(AssetStatus.RETIRED);
+        assetRepository.save(asset);
 
-        assetRepository.deleteById(assetId);
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId,oldStatus, "Status: Retired");
+    }
 
-        auditLogService.logDelete(getCurrentUserId(), EntityType.ASSET, assetId, snapshot);
+    // Get Available And Loaned Assets
+    public List<AssetResponseDTO> getAvailAndLoanedAssests(){
+        return assetRepository.searchAndFilterAssets(null, null, null, null, null)
+                .stream()
+                .filter(asset -> asset.getStatus() != AssetStatus.RETIRED)
+                .map(assetMapper::AssetToAssetResponseDTO)
+                .collect(Collectors.toList());
     }
 
     public List<AssetResponseDTO> getAllAssets() {
@@ -121,7 +103,7 @@ public class AssetService {
 
     public AssetResponseDTO getAssetById(Long assetId) {
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Asset not found with ID: " + assetId));
+                .orElseThrow(() -> new RuntimeException("Asset not found with ID: " + assetId));
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
@@ -132,6 +114,8 @@ public class AssetService {
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
     }
+
+
 
     public List<AssetResponseDTO> searchAndFilterAssets(AssetSearchRequest searchRequest) {
         List<Asset> assets = assetRepository.searchAndFilterAssets(
@@ -146,6 +130,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
+    // Main search and filter logic
     public List<AssetResponseDTO> searchAndFilterAssets(
             String title,
             String category,
@@ -189,7 +174,7 @@ public class AssetService {
     }
 
     @Transactional
-    public void bulkImportAssets(MultipartFile file, Long userId) throws Exception {
+    public void bulkImportAssets(MultipartFile file) throws Exception {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         List<String> errors = new ArrayList<>();
         List<Asset> assets = new ArrayList<>();
@@ -215,28 +200,6 @@ public class AssetService {
                     if (categoryStr == null || categoryStr.trim().isEmpty()) throw new IllegalArgumentException("Category is required");
                     if (location == null || location.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
                     if (statusStr == null || statusStr.trim().isEmpty()) throw new IllegalArgumentException("Status is required");
-
-                    // Check for duplicate serial numbers in CSV
-                    if (serialNumber != null && !serialNumber.trim().isEmpty()) {
-
-                        // Check duplicate in current batch
-                        final String currentSerial = serialNumber;
-                        boolean duplicateInBatch = assets.stream()
-                                .anyMatch(a -> currentSerial.equals(a.getSerialNumber()));
-
-                        if (duplicateInBatch) {
-                            errors.add(String.format("Row %d: Duplicate serial number '%s' in same CSV",
-                                    rowNumber, serialNumber));
-                            continue;
-                        }
-
-                        // Check duplicate in database
-                        if (assetRepository.findBySerialNumber(serialNumber).isPresent()) {
-                            errors.add(String.format("Row %d: Serial number '%s' already exists",
-                                    rowNumber, serialNumber));
-                            continue;
-                        }
-                    }
 
                     LocalDateTime acquisitionDate = null;
                     if (acquisitionDateStr != null && !acquisitionDateStr.trim().isEmpty()) {
@@ -272,22 +235,25 @@ public class AssetService {
                 }
             }
 
-            // THROW BULK IMPORT EXCEPTION INSTEAD OF RUNTIME EXCEPTION
             if (!errors.isEmpty()) {
-                throw new BulkImportException("Bulk import failed with " + errors.size() + " error(s):\n" + String.join("\n", errors));
+                throw new RuntimeException("Bulk import failed with " + errors.size() + " error(s):\n" + String.join("\n", errors));
             }
 
             if (!assets.isEmpty()) {
                 assetRepository.saveAll(assets);
-                auditLogService.logCreate(userId, EntityType.ASSET, null, "Bulk imported " + assets.size() + " assets via CSV.");
+                Long currentUserId = getCurrentUserId();
+                for (Asset a : assets) {
+                    String details = "Bulk imported via CSV. Title: " + a.getTitle() + " | S/N: " + (a.getSerialNumber() != null ? a.getSerialNumber() : "N/A");
+                    auditLogService.logCreate(currentUserId, EntityType.ASSET, a.getAssetId(), details);
+                }
             } else {
-                // THROW BULK IMPORT EXCEPTION INSTEAD OF RUNTIME EXCEPTION
-                throw new BulkImportException("No valid assets to import");
+                throw new RuntimeException("No valid assets to import");
             }
         } catch (Exception e) {
             throw e;
         }
     }
+
 
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
@@ -295,8 +261,8 @@ public class AssetService {
                 .getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getId(); // Returns your actual logged-in user's database ID
+            return userDetails.getId();
         }
-        return null; // System or unauthenticated action
+        return null;
     }
 }

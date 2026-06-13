@@ -4,6 +4,7 @@ import com.invision.web.Invision.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,16 +25,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                "/api/assets/**",   // <-- Broad catch-all for anything starting with /assets
-                                "/api/loans/**",    // <-- Broad catch-all for anything starting with /loans
+                                "/api/assets/**",
+                                "/api/loans/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/forgot-password/**"
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
+                                "/forgot-password/**",
                                 "/api/assets/**",
                                 "/api/loans/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
@@ -55,7 +58,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .sessionManagement(session -> session
-                        .sessionFixation(fixation -> fixation.newSession())
+                        .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::newSession)
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
