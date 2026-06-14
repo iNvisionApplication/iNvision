@@ -18,6 +18,8 @@ import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 
@@ -37,6 +39,7 @@ public class LoanService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public List<LoanResponseDTO> getAllOverdueLoans(){
         return loanRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), LoanStatus.RETURNED)
                 .stream()
@@ -44,6 +47,7 @@ public class LoanService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getOverdueLoansByDepartment(Department department) {
         List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusNotAndUserDepartment(
                 LocalDateTime.now(), LoanStatus.RETURNED, department);
@@ -70,7 +74,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getLoansByAsset(Long assetId){
         List<Loan> loans =  loanRepository.findByAssetAssetId(assetId);
 
@@ -91,6 +95,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
         User manager = userRepository.findById(getCurrentUserId())
@@ -176,16 +181,17 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(saved);
     }
 
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
-        Loan loan = loanMapper.loanRequestDTOToLoan(requestDTO);
-        Asset asset = assetRepository.findById(loan.getAsset().getAssetId()).orElseThrow(
+        User requester = getAuthenticatedUser();
+        Asset asset = assetRepository.findById(requestDTO.assetId()).orElseThrow(
                 () -> new AssetNotFoundException("This asset does not exist")
         );
-        if(loanRepository.countByUserUserIdAndStatus(loan.getUser().getUserId(),LoanStatus.APPROVED)>5){
+        if(loanRepository.countByUserUserIdAndStatus(requester.getUserId(),LoanStatus.APPROVED)>5){
             throw new ExceededLoanRequestException("User had too many active loans");
         }
-        if (loanRepository.existsByUserUserIdAndAssetAssetIdAndStatusIn(requestDTO.userId(), requestDTO.assetId(),List.of(LoanStatus.APPROVED, LoanStatus.PENDING))) {
+        if (loanRepository.existsByUserUserIdAndAssetAssetIdAndStatusIn(requester.getUserId(), requestDTO.assetId(),List.of(LoanStatus.APPROVED, LoanStatus.PENDING))) {
             throw new BadLoanRequest("User has already has an active loan for this asset");
         }
 
@@ -193,8 +199,7 @@ public class LoanService {
             throw new BadLoanRequest("This asset is retired and cannot be loaned");
         }
 
-        User requester = userRepository.findById(requestDTO.userId()).orElseThrow(
-                () -> new UserNotFoundException("User does not exist"));
+
         List<User> managers = userRepository.findByDepartmentAndRole(requestDTO.department(),Role.MANAGER);
 
         if (managers.isEmpty()) {
@@ -204,17 +209,28 @@ public class LoanService {
         List<User> copyOfManagers = new ArrayList<>(managers);
         Collections.shuffle(copyOfManagers);
 
-        notificationService.sendAll(requestDTO.userId(),copyOfManagers.get(0).getEmail()
+        notificationService.sendAll(requester.getUserId(),copyOfManagers.get(0).getEmail()
                 ,NotificationReason.LOAN_REQUEST,
                 "Loan for " + asset.getTitle() + " was request by" + requester.getEmail() +".");
 
 
-        notificationService.sendAll(requestDTO.userId(),copyOfManagers.get(1).getEmail()
+        notificationService.sendAll(requester.getUserId(),copyOfManagers.get(1).getEmail()
                 ,NotificationReason.LOAN_REQUEST,
                 "Loan for " + asset.getTitle() + " was request by" + requester.getEmail() +".");
 
         // Audit log registration for initial request creation
         //auditLogService.logCreate(getCurrentUserId(), EntityType.LOAN, loan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
+
+        Loan loan = Loan.builder()
+                .asset(asset)
+                .user(requester)
+                .requestDate(LocalDateTime.now())
+                .status(LoanStatus.PENDING)
+                .assetLoanStatus(AssetLoanStatus.PENDING_APPROVAL)
+                .userDepartment(requester.getDepartment())
+                .description(requestDTO.description())
+                .loanPeriod(requestDTO.loanPeriod())
+                .build();
 
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
@@ -243,7 +259,8 @@ public class LoanService {
     }
 
         //When borrower returns asset
-    @Transactional
+        @PreAuthorize("hasRole('ROLE_BORROWER')")
+        @Transactional
     public LoanResponseDTO loanActionReturn(Long loanId){
         Loan loan = loanRepository.findById(loanId).orElseThrow(
                 () -> new NoLoansFoundException("This loan does not exist")
@@ -258,6 +275,7 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(saved);
     }
     //When borrower collects asset
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO loanActionCollect(Long loanId){
         Loan loan = loanRepository.findById(loanId).orElseThrow(
@@ -279,6 +297,12 @@ public class LoanService {
             return userDetails.getId(); // Returns your actual logged-in user's database ID
         }
         return null; // System or unauthenticated action
+    }
+
+    private User getAuthenticatedUser() {
+        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+        return userDetails.getUser();
     }
 
 

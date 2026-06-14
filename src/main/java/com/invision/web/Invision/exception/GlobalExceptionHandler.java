@@ -12,6 +12,7 @@ import com.invision.web.Invision.exception.user.UserNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -59,6 +60,16 @@ public class GlobalExceptionHandler {
                 request.getDescription(false),
                 LocalDateTime.now()
         ));
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAuthorizationDenied(
+            AuthorizationDeniedException ex, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponseDTO(403, "FORBIDDEN",
+                        "You do not have permission to perform this action",
+                        request.getDescription(false),
+                        LocalDateTime.now()));
     }
 
     //Asset Errors
