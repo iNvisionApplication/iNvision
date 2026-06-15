@@ -1,11 +1,16 @@
 package com.invision.web.Invision.service;
 
+import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserLoginDTO;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.Role;
+import com.invision.web.Invision.exception.user.UserNotFoundException;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +20,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -64,4 +71,25 @@ public class UserService {
         userRepository.save(user);
         return "User " + user.getEmail() + " registered successfully as " + user.getRole();
     }
+
+    // ADMIN: DEACTIVATE USER
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional
+    public void deactivateUser(long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        user.setActive(false);
+        userRepository.save(user);
+        auditLogService.logUpdate(getCurrentUserId(), EntityType.USER, userId, "Status: ACTIVE", "Status: DEACTIVATED");
+    }
+
+
+    public Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+        return null;
+    }
+
 }
