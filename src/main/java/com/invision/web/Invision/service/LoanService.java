@@ -186,9 +186,9 @@ public class LoanService {
             throw new BadLoanRequest("This asset is retired and cannot be loaned");
         }
 
-        List<User> managers = userRepository.findByDepartmentAndRole(requestDTO.department(), Role.MANAGER);
+        List<User> managers = userRepository.findByDepartmentAndRole(requester.getDepartment(), Role.MANAGER);
         if (managers.isEmpty()) {
-            throw new BadLoanRequest("No managers found for department: " + requestDTO.department());
+            throw new BadLoanRequest("No managers found for department: " + requester.getDepartment());
         }
 
         List<User> copyOfManagers = new ArrayList<>(managers);

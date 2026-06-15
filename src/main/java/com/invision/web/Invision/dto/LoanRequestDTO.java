@@ -19,8 +19,5 @@ public record LoanRequestDTO(
         String description,
 
         @NotNull(message = "Loan period is required")
-        LoanPeriod loanPeriod,
-
-        @Enumerated(EnumType.STRING)
-        Department department
+        LoanPeriod loanPeriod
 ) {}
