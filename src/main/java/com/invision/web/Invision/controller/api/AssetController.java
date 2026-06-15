@@ -32,65 +32,67 @@ public class AssetController {
 
     // Get asset by ID
     @GetMapping("/{assetId}")
-    public ResponseEntity<AssetResponseDTO> getAssetById(@Valid @PathVariable Long assetId) {
+    public ResponseEntity<AssetResponseDTO> getAssetById(@PathVariable Long assetId) {
         AssetResponseDTO asset = assetService.getAssetById(assetId);
         return ResponseEntity.ok(asset);
     }
 
-
+    // Search and filter assets with query parameters
     @GetMapping("/search")
-    public ResponseEntity<List<AssetResponseDTO>> searchAndFilterAssets( @Valid AssetSearchRequest searchRequest) {
-        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(searchRequest);
+    public ResponseEntity<List<AssetResponseDTO>> searchAssets(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String condition) {
+
+        List<AssetResponseDTO> assets = assetService.searchAndFilterAssets(
+                title, category, status, location, condition
+        );
         return ResponseEntity.ok(assets);
     }
 
+    // Create asset
     @PostMapping
     public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO assetRequestDTO) {
         AssetResponseDTO createdAsset = assetService.addAsset(assetRequestDTO);
         return new ResponseEntity<>(createdAsset, HttpStatus.CREATED);
     }
 
-
+    // Update asset
     @PutMapping("/update/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
             @Valid @RequestBody AssetRequestDTO assetDetails) {
-
         String result = assetService.updateAsset(assetId, assetDetails);
         return ResponseEntity.ok(result);
     }
 
     // Retire an asset
     @PutMapping("/retire/{assetId}")
-    public ResponseEntity<String> retireAsset(
-            @PathVariable Long assetId) {
-
+    public ResponseEntity<String> retireAsset(@PathVariable Long assetId) {
         assetService.retireAsset(assetId);
         return ResponseEntity.ok("Asset retired successfully with ID: " + assetId);
     }
 
-    // Get only AVAILABLE and LOANED assets (explicit)
+    // Get available and loaned assets
     @GetMapping("/available-loaned")
     public ResponseEntity<List<AssetResponseDTO>> getAvailableAndLoanedAssets() {
-        List<AssetResponseDTO> assets = assetService.getAvailAndLoanedAssests();
+        List<AssetResponseDTO> assets = assetService.getAvailAndLoanedAssets();
         return ResponseEntity.ok(assets);
     }
 
     // Bulk Import CSV
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadCSV( @RequestPart("file") MultipartFile file) {
-
+    public ResponseEntity<String> uploadCSV(@RequestPart("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Failed to process CSV: Uploaded file is empty.");
         }
 
-        // 2. Metadata Check: Extract content type and file name extensions
         String contentType = file.getContentType();
         String filename = file.getOriginalFilename();
 
-        // 3. Strict Extension Validation
-        // Checks standard mime types ("text/csv" or "application/vnd.ms-excel" for some OS variants)
         boolean isValidMimeType = contentType != null &&
                 (contentType.equalsIgnoreCase("text/csv") ||
                         contentType.equalsIgnoreCase("application/vnd.ms-excel"));
@@ -102,7 +104,6 @@ public class AssetController {
                     .body("Failed to process CSV: Only standard .csv files are permitted.");
         }
 
-        // 4. File Size Guard Clause (e.g., Reject files larger than 5MB to prevent memory exhaustion)
         long maxBytes = 5 * 1024 * 1024;
         if (file.getSize() > maxBytes) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
