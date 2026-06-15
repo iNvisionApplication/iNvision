@@ -3,6 +3,7 @@ package com.invision.web.Invision.service;
 import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserLoginDTO;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
+import com.invision.web.Invision.dto.UserUpdateDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.Role;
@@ -14,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class UserService {
@@ -65,11 +68,27 @@ public class UserService {
         user.setName(request.name());
         user.setDepartment(request.department());
         user.setEmail(request.email());
-
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(request.role());
         userRepository.save(user);
         return "User " + user.getEmail() + " registered successfully as " + user.getRole();
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+    // Updating user details
+    @Transactional
+    public User updateUser(Long id, UserUpdateDTO updatedUser) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+
+        user.setName(updatedUser.getName());
+        user.setEmail(updatedUser.getEmail());
+        user.setDepartment(updatedUser.getDepartment());
+        user.setRole(updatedUser.getRole());
+
+        return userRepository.save(user);
     }
 
     // ADMIN: DEACTIVATE USER

@@ -11,6 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.http.HttpMethod;
+
 
 @Configuration
 @EnableMethodSecurity
@@ -29,6 +31,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/assets/**",
                                 "/api/loans/**",
+                                "/api/users/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/forgot-password/**"
@@ -39,11 +42,19 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
                                 "/forgot-password/**",
-                                "/api/assets/**",
-                                "/api/loans/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers("/api/assets/**", "/api/loans/**")
+                        .authenticated()
+
                         .anyRequest().authenticated()
+
                 )
                 .userDetailsService(customUserDetailsService)
                 .formLogin(form -> form

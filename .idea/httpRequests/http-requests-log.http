@@ -1,0 +1,29 @@
+GET http://localhost:8081/api/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2026.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+cookie: JSESSIONID=74D9490D265ADAE455862F700660CCB9
+
+<> 2026-06-15T120523.200.html
+
+###
+
+# @no-redirect
+GET http://localhost:8081/api/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2026.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+Cookie: JSESSIONID=74D9490D265ADAE455862F700660CCB9
+
+###
+
+GET http://localhost:8081/api/users
+User-Agent: IntelliJ HTTP Client/IntelliJ IDEA 2026.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+Accept: */*
+cookie: JSESSIONID=74D9490D265ADAE455862F700660CCB9
+
+<> 2026-06-15T115439.200.html
+
+###
+

@@ -1,4 +1,4 @@
-package com.invision.web.Invision.controller;
+package com.invision.web.Invision.controller.api;
 
 import com.invision.web.Invision.service.UserService;
 import lombok.RequiredArgsConstructor;
