@@ -30,41 +30,6 @@ public class AuthController {
         return "redirect:/login";
     }
 
-    @GetMapping("/test")
-    public String showTestPage(Model model) {
-        var authentication = org.springframework.security.core.context.SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-
-        if (authentication == null) {
-            model.addAttribute("authStatus", "No Authentication Object Found");
-            model.addAttribute("principalClass", "N/A");
-            model.addAttribute("username", "None");
-            model.addAttribute("currentUserId", null);
-        } else {
-            Object principal = authentication.getPrincipal();
-
-            model.addAttribute("authStatus", authentication.isAuthenticated() ? "Authenticated" : "Not Authenticated");
-            model.addAttribute("principalClass", principal.getClass().getName());
-            model.addAttribute("username", authentication.getName());
-
-            if (principal instanceof com.invision.web.Invision.config.CustomUserDetails userDetails) {
-                model.addAttribute("currentUserId", userDetails.getId());
-            } else {
-                model.addAttribute("currentUserId", null);
-            }
-        }
-        return "dashboard/test";
-    }
-
-    private Long getCurrentUserId() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getId();
-        }
-        return null;
-    }
-
     @GetMapping("/login")
     public String login() {
         return "auth/login";

@@ -42,6 +42,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Builder.Default
+    private boolean active = true;
+
     @Override
     public String getPassword() {
         return password;
