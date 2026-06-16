@@ -28,6 +28,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 @Transactional
 @AllArgsConstructor
@@ -92,12 +95,26 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
-    public List<AssetResponseDTO> getAllAssets() {
+    public List<AssetResponseDTO> getAllAssetsAsList() {
         List<Asset> assets = assetRepository.findAll();
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    // Get assets with pagination
+    public Page<AssetResponseDTO> getAllAssetsPaginated(Pageable pageable) {
+        return assetRepository.findAll(pageable)
+                .map(assetMapper::AssetToAssetResponseDTO);
+    }
+
+    // old methods //
+//    public List<AssetResponseDTO> getAllAssets() {
+//        List<Asset> assets = assetRepository.findAll();
+//        return assets.stream()
+//                .map(assetMapper::AssetToAssetResponseDTO)
+//                .collect(Collectors.toList());
+//    }
 
     public AssetResponseDTO getAssetById(Long assetId) {
         Asset asset = assetRepository.findById(assetId)
