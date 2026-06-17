@@ -33,7 +33,6 @@ function getCurrentUserRole() {
 // ================= LOANS =================
 
 function loadUserLoans() {
-    const userId = getCurrentUserId();
     const role = getCurrentUserRole();
     const tableBody = document.getElementById("loanHistoryBody");
 
@@ -44,8 +43,7 @@ function loadUserLoans() {
     if (role === "ADMIN" || role === "MANAGER") {
         url = "/api/loans";
     } else {
-        if (!userId) return;
-        url = `/api/loans/user/${userId}`;
+        url = "/api/loans/user";
     }
 
     fetch(url)
@@ -93,6 +91,7 @@ function loadUserLoans() {
 function submitLoanRequest(event) {
     event.preventDefault();
 
+    const submitBtn = document.getElementById("submitLoanBtn");
     const userId = getCurrentUserId();
     const assetId = document.getElementById("selectedAssetId")?.value;
     const loanPeriod = document.getElementById("loanPeriod")?.value;
@@ -111,6 +110,11 @@ function submitLoanRequest(event) {
     if (!loanPeriod) {
         alert("Please select a loan period.");
         return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("btn-loading");
     }
 
     const loanRequest = {
@@ -138,11 +142,17 @@ function submitLoanRequest(event) {
             return responseText ? JSON.parse(responseText) : {};
         })
         .then(() => {
-            alert("Loan request submitted successfully.");
             window.location.href = "/loans";
         })
         .catch(error => {
             console.error("Error submitting loan request:", error);
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("btn-loading");
+                submitBtn.textContent = "Submit Request";
+            }
+
             alert("Failed to submit loan request.");
         });
 }
@@ -236,7 +246,8 @@ function openLoanPanel(assetId, assetTitle) {
 
     if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerText = "Submit Request";
+        submitBtn.classList.remove("btn-loading");
+        submitBtn.textContent = "Submit Request";
     }
 }
 
