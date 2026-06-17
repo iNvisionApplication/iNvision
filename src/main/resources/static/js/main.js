@@ -258,13 +258,30 @@ async function loadUsers() {
     try {
         const response = await fetch("/api/users");
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch users");
-        }
+    // 1. Extract the CSRF tokens from your page head
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const loanRequest = {
+        assetId: Number(assetId),
+        userId: Number(userId),
+        description: description,
+        loanPeriod: loanPeriod
+    };
 
         const users = await response.json();
 
-        tbody.innerHTML = "";
+    fetch("/api/loans", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": userId,
+            [csrfHeader]: csrfToken // 2. Inject the validation token here to stop the 403 block
+        },
+        body: JSON.stringify(loanRequest)
+    })
+        .then(async response => {
+            const responseText = await response.text();
 
         if (!Array.isArray(users) || users.length === 0) {
             tbody.innerHTML = `
@@ -386,9 +403,101 @@ function getAssetStatusBadge(status) {
     return `<span class="badge badge-${status.toLowerCase()}">${status}</span>`;
 }
 
-function escapeText(text) {
-    return String(text || "")
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;");
+//Users dashboard also uses this main.js
+
+document.addEventListener("DOMContentLoaded", loadUsers);
+
+async function loadUsers() {
+    const tbody = document.getElementById("usersTableBody");
+
+    try {
+        const response = await fetch("/api/users");
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch users");
+        }
+
+        const users = await response.json();
+
+        tbody.innerHTML = "";
+
+        if (users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
+            return;
+        }
+
+        users.forEach(user => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.userId}</td> 
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.department}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button onclick="editUser(${user.userId})">Edit</button>
+                        <button onclick="deleteUser(${user.userId})">Deactivate</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
+        console.error(error);
+    }
+}
+
+async function deleteUser(userId) {
+    const confirmDelete = confirm("Are you sure you want to delete this user?");
+    if (!confirmDelete) return;
+
+    // 1. Extract the CSRF security tokens from your page head
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    // 2. Pass the header token along with the DELETE request
+    const response = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+            [header]: token
+        }
+    });
+
+    if (response.ok) {
+        alert("User account successfully deactivated.");
+        loadUsers();
+    } else {
+        alert("Failed to delete user. Ensure you have administrative privileges.");
+    }
+}
+
+function editUser(userId) {
+    alert("Edit form still needs to be added for user ID: " + userId);
+}
+
+function extendUserSession() {
+    clearInterval(countdownInterval);
+
+    // Extract tokens from document headers
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    fetch('/api/auth/keep-alive', {
+        method: 'GET',
+        headers: {
+            [header]: token
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            timeoutModal.hide();
+            resetIdleTimer();
+        } else {
+            window.location.href = "/login";
+        }
+    })
+    .catch(() => {
+        window.location.href = "/login";
+    });
 }
