@@ -12,9 +12,11 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/AuthController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/LoanController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/PasswordResetController.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/UsersController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/AssetPageController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/DashboardController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/LoanPageController.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/UsersPageController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetRequestDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetResponseDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetSearchRequest.java
@@ -27,6 +29,7 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserLoginDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserRegistrationDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserResponseDTO.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/UserUpdateDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/ActionLog.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/AssetLoanStatus.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/enums/AssetStatus.java
