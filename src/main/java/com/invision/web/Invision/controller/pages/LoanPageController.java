@@ -14,8 +14,15 @@ public class LoanPageController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             Model model) {
 
-        model.addAttribute("currentUserId", userDetails.getId());
         model.addAttribute("currentUri", "/loans");
+
+        model.addAttribute("currentUserId", userDetails.getId());
+        model.addAttribute("currentUserRole",
+                userDetails.getAuthorities()
+                        .iterator()
+                        .next()
+                        .getAuthority()
+                        .replace("ROLE_", ""));
 
         return "loans/loan";
     }
