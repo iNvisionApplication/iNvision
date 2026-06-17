@@ -5,6 +5,7 @@ import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +25,11 @@ public class AssetController {
     }
 
     // Get all assets
-    @GetMapping
-    public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
-        List<AssetResponseDTO> assets = assetService.getAllAssets();
-        return ResponseEntity.ok(assets);
-    }
+//    @GetMapping
+//    public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
+//        List<AssetResponseDTO> assets = assetService.getAllAssets();
+//        return ResponseEntity.ok(assets);
+//    }
 
     // Get asset by ID
     @GetMapping("/{assetId}")
@@ -119,4 +120,14 @@ public class AssetController {
                     .body("Failed to process CSV: " + e.getMessage());
         }
     }
+
+
+    @GetMapping
+    public ResponseEntity<Page<AssetResponseDTO>> getAssets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(assetService.getAssetsForCurrentUser(page, size));
+    }
+
 }

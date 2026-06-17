@@ -19,6 +19,10 @@ import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
@@ -303,4 +307,27 @@ public class LoanService {
                 .getContext().getAuthentication().getPrincipal();
         return userDetails.getUser();
     }
+
+    // Inside LoanService.java
+
+    public Page<LoanResponseDTO> getAllLoans(int page, int size) {
+        // Sort transactions so the newest requests appear at the top of the admin list
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        return loanRepository.findAll(pageable)
+                .map(loanMapper::loanToLoanResponseDTO);
+    }
+
+    public Page<LoanResponseDTO> getUserLoans(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        Page<Loan> loans = loanRepository.findByUserUserId(userId, pageable);
+
+        if (loans.isEmpty()) {
+            throw new NoLoansFoundException("This user has no loan history");
+        }
+
+        return loans.map(loanMapper::loanToLoanResponseDTO);
+    }
+
 }

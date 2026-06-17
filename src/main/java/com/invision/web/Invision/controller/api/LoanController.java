@@ -9,8 +9,10 @@ import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -90,9 +92,21 @@ public class LoanController {
     }
 
     @GetMapping
-    public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
-        return ResponseEntity.ok(loanService.getAllLoans());
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
+    public ResponseEntity<Page<LoanResponseDTO>> getAllLoans(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(loanService.getAllLoans(page, size));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Page<LoanResponseDTO>> getUserLoans(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(loanService.getUserLoans(userId, page, size));
+    }
 
 }
