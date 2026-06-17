@@ -95,6 +95,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
+    // For the simple Assets List
     public List<AssetResponseDTO> getAllAssetsAsList() {
         List<Asset> assets = assetRepository.findAll();
         return assets.stream()
@@ -102,19 +103,11 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
-    // Get assets with pagination
+    // For the Paginated Assets List
     public Page<AssetResponseDTO> getAllAssetsPaginated(Pageable pageable) {
         return assetRepository.findAll(pageable)
                 .map(assetMapper::AssetToAssetResponseDTO);
     }
-
-    // old methods //
-//    public List<AssetResponseDTO> getAllAssets() {
-//        List<Asset> assets = assetRepository.findAll();
-//        return assets.stream()
-//                .map(assetMapper::AssetToAssetResponseDTO)
-//                .collect(Collectors.toList());
-//    }
 
     public AssetResponseDTO getAssetById(Long assetId) {
         Asset asset = assetRepository.findById(assetId)

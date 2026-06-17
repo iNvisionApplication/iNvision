@@ -21,6 +21,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             "(CAST(:status AS string) IS NULL OR a.status = :status) AND " +
             "(CAST(:location AS string) IS NULL OR a.location = :location) AND " +
             "(CAST(:condition AS string) IS NULL OR a.condition = :condition)")
+
     List<Asset> searchAndFilterAssets(
             @Param("title") String title,
             @Param("category") Category category,

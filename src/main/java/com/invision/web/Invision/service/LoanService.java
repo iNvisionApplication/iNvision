@@ -17,6 +17,8 @@ import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -232,6 +234,12 @@ public class LoanService {
         return loanRepository.findAll().stream()
                 .map(loanMapper::loanToLoanResponseDTO).toList();
     }
+
+//    // Paginated option for loans
+//    public Page<LoanResponseDTO> getLoansPaginated(Pageable pageable){
+//        return loanRepository.findAll(pageable)
+//                .map(loanMapper::loanToLoanResponseDTO);
+//    }
 
     @Transactional
     public List<LoanResponseDTO> getUserLoansByStatus(Long userId, LoanStatus status){

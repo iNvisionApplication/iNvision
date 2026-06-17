@@ -9,6 +9,10 @@ import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,47 +42,47 @@ public class LoanController {
     }
 
     @PatchMapping("/{id}/return")
-    public ResponseEntity<LoanResponseDTO> LoanActionReturn(@PathVariable("id") Long loanId){
-       return ResponseEntity.ok(loanService.loanActionReturn(loanId));
+    public ResponseEntity<LoanResponseDTO> LoanActionReturn(@PathVariable("id") Long loanId) {
+        return ResponseEntity.ok(loanService.loanActionReturn(loanId));
     }
 
     @PatchMapping("/{id}/collect")
-    public ResponseEntity<LoanResponseDTO> LoanActionCollect(@PathVariable("id") Long loanId){
+    public ResponseEntity<LoanResponseDTO> LoanActionCollect(@PathVariable("id") Long loanId) {
         return ResponseEntity.ok(loanService.loanActionCollect(loanId));
     }
 
     @GetMapping("/status")
-    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(@RequestBody LoanStatus status){
+    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(@RequestBody LoanStatus status) {
         return ResponseEntity.ok(loanService.getAllLoansByStatus(status));
     }
 
     @GetMapping("/overdue")
-    public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans(){
+    public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans() {
         return ResponseEntity.ok(loanService.getAllOverdueLoans());
     }
 
     @GetMapping("/overdue/department/{department}")
-    public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByDepartment(@PathVariable Department department){
+    public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByDepartment(@PathVariable Department department) {
         return ResponseEntity.ok(loanService.getOverdueLoansByDepartment(department));
     }
 
     @GetMapping("/overdue/{userId}")
-    public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
+    public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId) {
         return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
     }
 
     @GetMapping("/asset/{assetId}")
-    public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByAsset(@PathVariable Long assetId){
+    public ResponseEntity<List<LoanResponseDTO>> getOverdueLoansByAsset(@PathVariable Long assetId) {
         return ResponseEntity.ok(loanService.getLoansByAsset(assetId));
     }
 
     @GetMapping("/user/{userId}/status")
-    public ResponseEntity<List<LoanResponseDTO>> getUserLoansByStatus(@PathVariable Long userId, @RequestParam LoanStatus status){
-        return ResponseEntity.ok(loanService.getUserLoansByStatus(userId,status));
+    public ResponseEntity<List<LoanResponseDTO>> getUserLoansByStatus(@PathVariable Long userId, @RequestParam LoanStatus status) {
+        return ResponseEntity.ok(loanService.getUserLoansByStatus(userId, status));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<LoanResponseDTO>> getUserLoans(@PathVariable Long userId){
+    public ResponseEntity<List<LoanResponseDTO>> getUserLoans(@PathVariable Long userId) {
         return ResponseEntity.ok(loanService.getUserLoans(userId));
     }
 
@@ -86,6 +90,15 @@ public class LoanController {
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans(){
         return ResponseEntity.ok(loanService.getAllLoans());
     }
+
+//    // Getting all Loans using pagination feature
+//    @GetMapping
+//    public ResponseEntity<Page<LoanResponseDTO>> getLoansPaginated(
+//            @RequestParam(defaultValue = "0") int page) {
+//        // Defaulting to 10 items per page, sorted by loadId asc
+//        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.ASC, "loanId"));
+//        return ResponseEntity.ok(loanService.getLoansPaginated(pageable));
+//    }
 
 
 }

@@ -2,9 +2,10 @@ package com.invision.web.Invision.controller.api;
 
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
-import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -27,25 +27,29 @@ public class AssetController {
         this.assetService = assetService;
     }
 
-    @GetMapping("/all")
+    // =============================================
+    // OPTION 1: Simple List
+    // Returns ALL assets as a simple list
+    // =============================================
+    @GetMapping
     public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
         List<AssetResponseDTO> assets = assetService.getAllAssetsAsList();
         return ResponseEntity.ok(assets);
     }
 
-    // Get assets with pagination (new feature)
-    @GetMapping("/paginated")
-    public ResponseEntity<Page<AssetResponseDTO>> getAssetsPaginated(
-            @PageableDefault(size = 10, sort = "assetId") Pageable pageable) {
-        return ResponseEntity.ok(assetService.getAllAssetsPaginated(pageable));
-    }
+    // ======================================================
+    // OPTION 2: Paginated
+    // Returns 10 items per page, sorted by assetId ascending
+    // ======================================================
 
-    // old method //
 //    @GetMapping
-//    public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
-//        List<AssetResponseDTO> assets = assetService.getAllAssets();
-//        return ResponseEntity.ok(assets);
+//    public ResponseEntity<Page<AssetResponseDTO>> getAssetsPaginated(
+//            @RequestParam(defaultValue = "0") int page) {
+//        // Fixed: 10 items per page, sorted by assetId ascending
+//        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.ASC, "assetId"));
+//        return ResponseEntity.ok(assetService.getAllAssetsPaginated(pageable));
 //    }
+
 
     // Get asset by ID
     @GetMapping("/{assetId}")
