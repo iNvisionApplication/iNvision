@@ -1,12 +1,17 @@
+// Add these pagination trackers to the top of your script
+let currentAssetsPage = 0;
+let currentLoansPage = 0;
+const defaultPageSize = 9; // Fits a 3x3 dashboard layout grid beautifully
+
 document.addEventListener("DOMContentLoaded", function () {
     setupDueDateLimit();
 
     if (document.getElementById("loanHistoryBody")) {
-        loadUserLoans();
+        loadUserLoans(currentLoansPage);
     }
 
     if (document.getElementById("availableAssetsContainer")) {
-        loadAvailableAssets();
+        loadAvailableAssets(currentAssetsPage);
     }
 
     if (document.getElementById("usersTableBody")) {
@@ -31,19 +36,21 @@ function getCurrentUserRole() {
 
 // ================= LOANS =================
 
-function loadUserLoans() {
+function loadUserLoans(pageNumber) {
+    currentLoansPage = pageNumber;
     const userId = getCurrentUserId();
     const role = getCurrentUserRole();
     const tableBody = document.getElementById("loanHistoryBody");
+    const tableWrapper = tableBody?.closest('.table-wrapper');
 
     if (!tableBody) return;
 
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
-        url = "/api/loans";
+        url = `/api/loans?page=${pageNumber}&size=10`;
     } else {
         if (!userId) return;
-        url = `/api/loans/user/${userId}`;
+        url = `/api/loans/user/${userId}?page=${pageNumber}&size=10`;
     }
 
     fetch(url)
@@ -51,15 +58,14 @@ function loadUserLoans() {
             if (!response.ok) throw new Error("Failed to fetch loans");
             return response.json();
         })
-        .then(loans => {
+        .then(pageData => {
+            // Unpack paginated object array
+            const loans = pageData.content;
             tableBody.innerHTML = "";
 
             if (!Array.isArray(loans) || loans.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6">No loans found.</td>
-                    </tr>
-                `;
+                tableBody.innerHTML = `<tr><td colspan="6">No loans found.</td></tr>`;
+                removePaginationControls("loansPaginationControls");
                 return;
             }
 
@@ -75,14 +81,13 @@ function loadUserLoans() {
                 `;
                 tableBody.appendChild(row);
             });
+
+            // Build page bar positioned right below the table layout boundary box
+            buildPaginationControls("loansPaginationControls", tableWrapper, pageData.totalPages, pageData.number, loadUserLoans);
         })
         .catch(error => {
             console.error("Error loading loans:", error);
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="6">Failed to load loans.</td>
-                </tr>
-            `;
+            tableBody.innerHTML = `<tr><td colspan="6">Failed to load loans.</td></tr>`;
         });
 }
 
@@ -143,18 +148,21 @@ function submitLoanRequest(event) {
 
 // ================= ASSETS =================
 
-function loadAvailableAssets() {
+function loadAvailableAssets(pageNumber) {
+    currentAssetsPage = pageNumber;
     const container = document.getElementById("availableAssetsContainer");
     const assetCount = document.getElementById("assetCount");
 
     if (!container) return;
 
-    fetch("/api/assets")
+    fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
         .then(response => {
             if (!response.ok) throw new Error("Failed to fetch assets");
             return response.json();
         })
-        .then(assets => {
+        .then(pageData => {
+            // 1. Unpack the structural content collection
+            const assets = pageData.content;
             container.innerHTML = "";
 
             if (!Array.isArray(assets) || assets.length === 0) {
@@ -165,11 +173,13 @@ function loadAvailableAssets() {
                     </div>
                 `;
                 if (assetCount) assetCount.innerText = "0 assets";
+                removePaginationControls("assetsPaginationControls");
                 return;
             }
 
-            if (assetCount) assetCount.innerText = `${assets.length} assets`;
+            if (assetCount) assetCount.innerText = `${pageData.totalElements} assets available`;
 
+            // Render asset cards
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
@@ -193,16 +203,13 @@ function loadAvailableAssets() {
                 `;
                 container.appendChild(card);
             });
+
+            // 2. Build the navigation buttons bar underneath the container
+            buildPaginationControls("assetsPaginationControls", container, pageData.totalPages, pageData.number, loadAvailableAssets);
         })
         .catch(error => {
             console.error("Error loading assets:", error);
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>Failed to load assets</h3>
-                    <p>Please check the assets API endpoint.</p>
-                </div>
-            `;
-            if (assetCount) assetCount.innerText = "Error";
+            container.innerHTML = `<div class="empty-state"><h3>Failed to load assets</h3></div>`;
         });
 }
 
@@ -358,4 +365,69 @@ function extendUserSession() {
     .catch(() => {
         window.location.href = "/login";
     });
+}
+
+function buildPaginationControls(controlsId, targetSibling, totalPages, currentPage, navigationCallback) {
+    // Look for an existing bar element block, or generate a fresh one
+    let controlsContainer = document.getElementById(controlsId);
+    if (!controlsContainer) {
+        controlsContainer = document.createElement("div");
+        controlsContainer.id = controlsId;
+        controlsContainer.className = "pagination-container";
+        // Append right beneath the targeted content presentation space
+        targetSibling.parentNode.insertBefore(controlsContainer, targetSibling.nextSibling);
+    }
+
+    if (totalPages <= 1) {
+        controlsContainer.innerHTML = "";
+        return;
+    }
+
+    let htmlContent = `<ul class="pagination-list">`;
+
+    // Previous Navigation Controller link
+    htmlContent += `
+        <li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
+            <button class="page-link" type="button" data-page="${currentPage - 1}">Previous</button>
+        </li>
+    `;
+
+    // Numerical Intercept indices
+    for (let i = 0; i < totalPages; i++) {
+        htmlContent += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <button class="page-link" type="button" data-page="${i}">${i + 1}</button>
+            </li>
+        `;
+    }
+
+    // Next Navigation Controller link
+    htmlContent += `
+        <li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
+            <button class="page-link" type="button" data-page="${currentPage + 1}">Next</button>
+        </li>
+    `;
+
+    htmlContent += `</ul>`;
+    controlsContainer.innerHTML = htmlContent;
+
+    // Attach click events dynamically to prevent inline JS conflicts
+    controlsContainer.querySelectorAll(".page-link").forEach(button => {
+        button.addEventListener("click", function () {
+            const TargetPage = parseInt(this.getAttribute("data-page"));
+            const parentLi = this.parentElement;
+
+            if (parentLi.classList.contains("disabled") || parentLi.classList.contains("active")) {
+                return;
+            }
+            navigationCallback(TargetPage);
+        });
+    });
+}
+
+function removePaginationControls(controlsId) {
+    const controlsContainer = document.getElementById(controlsId);
+    if (controlsContainer) {
+        controlsContainer.remove();
+    }
 }

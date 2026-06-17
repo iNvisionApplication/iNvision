@@ -14,6 +14,10 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -316,4 +320,15 @@ public class AssetService {
         }
         return null;
     }
+
+    public Page<AssetResponseDTO> getAvailableAssets(int page, int size) {
+        // Creates pagination configuration sorting assets alphabetically by title
+        Pageable pageable = PageRequest.of(page, size, Sort.by("title").ascending());
+
+        Page<Asset> assetPage = assetRepository.findByStatus(AssetStatus.AVAILABLE, pageable);
+
+        // .map() here converts the internal content list while keeping the page counters intact
+        return assetPage.map(assetMapper::AssetToAssetResponseDTO);
+    }
+
 }

@@ -3,6 +3,8 @@ package com.invision.web.Invision.repository;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.model.Loan;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -29,4 +31,9 @@ public interface LoanRepository extends JpaRepository<Loan,Long> {
 
     long countByStatus(LoanStatus status);
     List<Loan> findTop5ByOrderByRequestDateDesc();
+
+    Page<Loan> findByUserUserId(Long userId, Pageable pageable);
+
+    Page<Loan> findByStatus(LoanStatus status, Pageable pageable);
+
 }
