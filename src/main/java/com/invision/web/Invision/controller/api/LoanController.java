@@ -62,9 +62,16 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getOverdueLoansByDepartment(department));
     }
 
+    //Manager and Admin
     @GetMapping("/overdue/{userId}")
     public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
         return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
+    }
+
+    //Borrower
+    @GetMapping("/my_loans/overdue")
+    public ResponseEntity<List<LoanResponseDTO>> getCurrentUserOverdueLoans(){
+        return ResponseEntity.ok(loanService.getCurrentUserOverdueLoans());
     }
 
     @GetMapping("/asset/{assetId}")
@@ -72,14 +79,14 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getLoansByAsset(assetId));
     }
 
-    @GetMapping("/user/{userId}/status")
-    public ResponseEntity<List<LoanResponseDTO>> getUserLoansByStatus(@PathVariable Long userId, @RequestParam LoanStatus status){
-        return ResponseEntity.ok(loanService.getUserLoansByStatus(userId,status));
+    @GetMapping("/user/status")
+    public ResponseEntity<List<LoanResponseDTO>> getUserLoansByStatus( @RequestParam LoanStatus status){
+        return ResponseEntity.ok(loanService.getUserLoansByStatus(status));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<LoanResponseDTO>> getUserLoans(@PathVariable Long userId){
-        return ResponseEntity.ok(loanService.getUserLoans(userId));
+    @GetMapping("/user")
+    public ResponseEntity<List<LoanResponseDTO>> getUserLoans(){
+        return ResponseEntity.ok(loanService.getUserLoans());
     }
 
     @GetMapping
