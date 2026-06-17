@@ -180,6 +180,10 @@ function submitLoanRequest(event) {
         return;
     }
 
+    // 1. Extract the CSRF tokens from your page head
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
     const loanRequest = {
         assetId: Number(assetId),
         userId: Number(userId),
@@ -193,7 +197,8 @@ function submitLoanRequest(event) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-User-Id": userId
+            "X-User-Id": userId,
+            [csrfHeader]: csrfToken // 2. Inject the validation token here to stop the 403 block
         },
         body: JSON.stringify(loanRequest)
     })
@@ -336,17 +341,52 @@ async function deleteUser(userId) {
     const confirmDelete = confirm("Are you sure you want to delete this user?");
     if (!confirmDelete) return;
 
+    // 1. Extract the CSRF security tokens from your page head
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    // 2. Pass the header token along with the DELETE request
     const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: {
+            [header]: token
+        }
     });
 
     if (response.ok) {
+        alert("User account successfully deactivated.");
         loadUsers();
     } else {
-        alert("Failed to delete user");
+        alert("Failed to delete user. Ensure you have administrative privileges.");
     }
 }
 
 function editUser(userId) {
     alert("Edit form still needs to be added for user ID: " + userId);
+}
+
+function extendUserSession() {
+    clearInterval(countdownInterval);
+
+    // Extract tokens from document headers
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    fetch('/api/auth/keep-alive', {
+        method: 'GET',
+        headers: {
+            [header]: token
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            timeoutModal.hide();
+            resetIdleTimer();
+        } else {
+            window.location.href = "/login";
+        }
+    })
+    .catch(() => {
+        window.location.href = "/login";
+    });
 }
