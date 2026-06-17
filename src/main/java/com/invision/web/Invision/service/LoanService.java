@@ -5,6 +5,7 @@ import com.invision.web.Invision.dto.LoanStatusDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.*;
+import com.invision.web.Invision.event.LoanRequestEvent;
 import com.invision.web.Invision.exception.asset.AssetNotFoundException;
 import com.invision.web.Invision.exception.loan.*;
 import com.invision.web.Invision.exception.user.UserNotFoundException;
@@ -17,10 +18,10 @@ import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 
@@ -39,6 +40,7 @@ public class LoanService {
     private final AuditLogService auditLogService;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public List<LoanResponseDTO> getAllOverdueLoans(){
@@ -62,6 +64,7 @@ public class LoanService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getUserOverdueLoans(Long userId){
         // FIX 1: Added negation operator so it doesn't reject valid profiles
         if (!userRepository.existsById(userId)) {
@@ -71,6 +74,18 @@ public class LoanService {
         List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusNotAndUserUserId(LocalDateTime.now(), LoanStatus.RETURNED, userId);
         if(loans.isEmpty()){
             throw new NoLoansFoundException("This user has no overdue loans");
+        }
+
+        return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
+    }
+
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    public List<LoanResponseDTO> getCurrentUserOverdueLoans(){
+        User user = getAuthenticatedUser();
+
+        List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusNotAndUserUserId(LocalDateTime.now(), LoanStatus.RETURNED, user.getUserId());
+        if(loans.isEmpty()){
+            throw new NoLoansFoundException("You have no overdue loans");
         }
 
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
@@ -87,8 +102,9 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-    public List<LoanResponseDTO> getUserLoans(Long userId){
-        List<Loan> loans = loanRepository.findByUserUserId(userId);
+    public List<LoanResponseDTO> getUserLoans(){
+        User user = getAuthenticatedUser();
+        List<Loan> loans = loanRepository.findByUserUserId(user.getUserId());
 
         if(loans.isEmpty()){
             throw new NoLoansFoundException("This user has no loan history");
@@ -100,8 +116,7 @@ public class LoanService {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
-        User manager = userRepository.findById(getCurrentUserId())
-                .orElseThrow(() -> new UserNotFoundException("This user does not exist"));
+        User manager = getAuthenticatedUser();
         String managerEmail = manager.getEmail();
 
         Loan loan = loanRepository.findById(loanId)
@@ -196,16 +211,16 @@ public class LoanService {
         List<User> copyOfManagers = new ArrayList<>(managers);
         Collections.shuffle(copyOfManagers);
 
-        // FIX 3: Safe execution limits prevent IndexOutOfBoundsException if department only holds 1 manager
-        notificationService.sendAll(requester.getUserId(), copyOfManagers.get(0).getEmail(),
-                NotificationReason.LOAN_REQUEST,
-                "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-
-        if (copyOfManagers.size() > 1) {
-            notificationService.sendAll(requester.getUserId(), copyOfManagers.get(1).getEmail(),
-                    NotificationReason.LOAN_REQUEST,
-                    "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-        }
+//        // FIX 3: Safe execution limits prevent IndexOutOfBoundsException if department only holds 1 manager
+//        notificationService.sendAll(requester.getUserId(), copyOfManagers.get(0).getEmail(),
+//                NotificationReason.LOAN_REQUEST,
+//                "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
+//
+//        if (copyOfManagers.size() > 1) {
+//            notificationService.sendAll(requester.getUserId(), copyOfManagers.get(1).getEmail(),
+//                    NotificationReason.LOAN_REQUEST,
+//                    "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
+//        }
 
         Loan loan = Loan.builder()
                 .asset(asset)
@@ -217,6 +232,10 @@ public class LoanService {
                 .description(requestDTO.description())
                 .loanPeriod(requestDTO.loanPeriod())
                 .build();
+
+        eventPublisher.publishEvent(new LoanRequestEvent(
+                requester.getUserId(),copyOfManagers.get(0).getEmail(), copyOfManagers.size() > 1 ? copyOfManagers.get(1).getEmail():null,asset.getTitle(),requester.getEmail()
+        ));
 
         Loan savedLoan = loanRepository.save(loan);
 
@@ -235,19 +254,11 @@ public class LoanService {
                 .map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-//    // Paginated option for loans
-//    public Page<LoanResponseDTO> getLoansPaginated(Pageable pageable){
-//        return loanRepository.findAll(pageable)
-//                .map(loanMapper::loanToLoanResponseDTO);
-//    }
-
     @Transactional
-    public List<LoanResponseDTO> getUserLoansByStatus(Long userId, LoanStatus status){
-        if(!userRepository.existsById(userId)){
-            throw new UserNotFoundException("User does not exist");
-        }
+    public List<LoanResponseDTO> getUserLoansByStatus( LoanStatus status){
+        User user = getAuthenticatedUser();
 
-        List<LoanResponseDTO> loans = loanRepository.findByUserUserIdAndStatus(userId, status).stream()
+        List<LoanResponseDTO> loans = loanRepository.findByUserUserIdAndStatus(user.getUserId(), status).stream()
                 .map(loanMapper::loanToLoanResponseDTO).toList();
 
         if(loans.isEmpty()){

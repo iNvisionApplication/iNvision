@@ -3,6 +3,7 @@ package com.invision.web.Invision.config;
 import com.invision.web.Invision.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
@@ -29,6 +30,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/assets/**",
                                 "/api/loans/**",
+                                "/api/users/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/forgot-password/**"
@@ -39,11 +41,19 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
                                 "/forgot-password/**",
-                                "/api/assets/**",
-                                "/api/loans/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers("/api/assets/**", "/api/loans/**")
+                        .authenticated()
+
                         .anyRequest().authenticated()
+
                 )
                 .userDetailsService(customUserDetailsService)
                 .formLogin(form -> form

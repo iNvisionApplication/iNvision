@@ -1,13 +1,19 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.enums.NotificationReason;
+import com.invision.web.Invision.event.LoanRequestEvent;
+import com.invision.web.Invision.exception.user.UserNotFoundException;
 import com.invision.web.Invision.model.SystemNotification;
+import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.SystemNotificationRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 
@@ -17,6 +23,7 @@ public class NotificationService {
 
     private final SystemNotificationRepository systemNotificationRepository;
     private final JavaMailSender mailSender;
+    private final com.invision.web.Invision.repository.UserRepository userRepository;
 
     @Value("${spring.mail.from}")
     private String fromEmail;
@@ -45,5 +52,23 @@ public class NotificationService {
     public void sendAll(Long userId, String email, NotificationReason reason, String message) {
         sendSystemNotification(userId, reason, message);
         sendEmailNotification(email, reason, message);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleLoanRequest(LoanRequestEvent event){
+        String message = "A loan for "+event.getAssetTitle()+"was requested by "+ event.getRequesterEmail() ;
+
+        sendSystemNotification(event.getRequesterId(),
+                NotificationReason.LOAN_REQUEST, message);
+
+        if (event.getManagerOneEmail() != null) {
+            sendEmailNotification(event.getManagerOneEmail(),
+                    NotificationReason.LOAN_REQUEST, message);
+        }
+        if (event.getManagerTwoEmail() != null) {
+            sendEmailNotification(event.getManagerTwoEmail(),
+                    NotificationReason.LOAN_REQUEST, message);
+        }
+
     }
 }

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>Users</title>
+</head>
+<body>
+<section>
+    <div class="page-header">
+        <div class="page-heading">
+            Users
+            <span>Manage system users</span>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+
+            <tbody id="usersTableBody">
+            <tr>
+                <td colspan="6">Loading users...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+</body>
+</html>
