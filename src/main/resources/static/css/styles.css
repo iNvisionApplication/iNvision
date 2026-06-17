@@ -680,6 +680,21 @@ textarea.form-control { resize: vertical; min-height: 90px; }
     border-radius: var(--radius);
     display: flex; align-items: center; justify-content: center;
 }
+.stat-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.stat-link .stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-link:hover .stat-card {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    cursor: pointer;
+}
 .stat-icon svg { width: 18px; height: 18px; }
 .stat-card.navy .stat-icon  { background: rgba(13,27,62,0.07);    color: var(--navy); }
 .stat-card.steel .stat-icon { background: var(--steel-dim);       color: var(--steel); }

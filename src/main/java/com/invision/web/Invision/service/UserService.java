@@ -3,17 +3,21 @@ package com.invision.web.Invision.service;
 import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserLoginDTO;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
+import com.invision.web.Invision.dto.UserUpdateDTO;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.exception.user.UserNotFoundException;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class UserService {
@@ -92,4 +96,20 @@ public class UserService {
         return null;
     }
 
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Transactional
+    public User updateUser(Long id, @Valid UserUpdateDTO updatedUser) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+
+        user.setName(updatedUser.getName());
+        user.setEmail(updatedUser.getEmail());
+        user.setDepartment(updatedUser.getDepartment());
+        user.setRole(updatedUser.getRole());
+
+        return userRepository.save(user);
+    }
 }

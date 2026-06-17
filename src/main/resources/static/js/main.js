@@ -218,49 +218,6 @@ function submitLoanRequest(event) {
             alert("Failed to submit loan request. Check console for details.");
         });
 }
-/*function submitLoanRequest(event) {
-    event.preventDefault();
-
-    const userId = getCurrentUserId();
-    const assetId = document.getElementById("selectedAssetId").value;
-    const loanPeriod = document.getElementById("loanPeriod").value;
-    const description = document.getElementById("description").value;
-
-    if (!assetId) {
-        alert("Please select an asset first.");
-        return;
-    }
-
-    const loanRequest = {
-        assetId: Number(assetId),
-        userId: Number(userId),
-        description: description,
-        loanPeriod: loanPeriod
-    };
-
-    fetch("/api/loans", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-User-Id": userId
-        },
-        body: JSON.stringify(loanRequest)
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Loan request failed");
-            }
-            return response.json();
-        })
-        .then(() => {
-            alert("Loan request submitted successfully.");
-            window.location.href = "/loans";
-        })
-        .catch(error => {
-            console.error("Error submitting loan request:", error);
-            alert("Failed to submit loan request.");
-        });
-}*/
 
 function getAssetImagePath(path) {
     if (!path || path === "string" || path === "url_photo") {
@@ -328,4 +285,68 @@ function getAssetStatusBadge(status) {
     }
 
     return `<span class="badge badge-${status.toLowerCase()}">${status}</span>`;
+}
+
+//Users dashboard also uses this main.js
+
+document.addEventListener("DOMContentLoaded", loadUsers);
+
+async function loadUsers() {
+    const tbody = document.getElementById("usersTableBody");
+
+    try {
+        const response = await fetch("/api/users");
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch users");
+        }
+
+        const users = await response.json();
+
+        tbody.innerHTML = "";
+
+        if (users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
+            return;
+        }
+
+        users.forEach(user => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.userId}</td> 
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.department}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button onclick="editUser(${user.userId})">Edit</button>
+                        <button onclick="deleteUser(${user.userId})">Deactivate</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
+        console.error(error);
+    }
+}
+
+async function deleteUser(userId) {
+    const confirmDelete = confirm("Are you sure you want to delete this user?");
+    if (!confirmDelete) return;
+
+    const response = await fetch(`/api/users/${userId}`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        loadUsers();
+    } else {
+        alert("Failed to delete user");
+    }
+}
+
+function editUser(userId) {
+    alert("Edit form still needs to be added for user ID: " + userId);
 }
