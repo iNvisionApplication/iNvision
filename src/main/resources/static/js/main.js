@@ -49,6 +49,10 @@ function getCurrentUserRole() {
 }
 
 function loadUserLoans(pageNumber) {
+
+if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
+        pageNumber = 0;
+    }
     currentLoansPage = pageNumber;
     const userId = getCurrentUserId();
     const role = getCurrentUserRole();
@@ -73,14 +77,18 @@ function loadUserLoans(pageNumber) {
             return response.json();
         })
         .then(pageData => {
-            const loans = pageData.content;
-            tableBody.innerHTML = "";
+                    // Safe unpacking extraction for both standard and VIA_DTO page structures
+                    const loans = pageData.content;
+                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
+                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
 
-            if (!Array.isArray(loans) || loans.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6">No loans found.</td></tr>`;
-                removePaginationControls("loansPaginationControls");
-                return;
-            }
+                    tableBody.innerHTML = "";
+
+                    if (!Array.isArray(loans) || loans.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="6">No loans found.</td></tr>`;
+                        removePaginationControls("loansPaginationControls");
+                        return;
+                    }
 
             loans.forEach(loan => {
                 const row = document.createElement("tr");
@@ -97,7 +105,7 @@ function loadUserLoans(pageNumber) {
                 tableBody.appendChild(row);
             });
 
-            buildPaginationControls("loansPaginationControls", tableWrapper, pageData.totalPages, pageData.number, loadUserLoans);
+            buildPaginationControls("loansPaginationControls", tableWrapper, totalPages, currentPage, loadUserLoans);
         })
         .catch(error => {
             console.error("Error loading loans:", error);
@@ -196,6 +204,9 @@ function showErrorModal(title, message) {
 }
 
 function loadAvailableAssets(pageNumber) {
+if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
+        pageNumber = 0;
+    }
     currentAssetsPage = pageNumber;
     const container = document.getElementById("availableAssetsContainer");
     const assetCount = document.getElementById("assetCount");
@@ -210,24 +221,27 @@ function loadAvailableAssets(pageNumber) {
             return response.json();
         })
         .then(pageData => {
-            const assets = pageData.content;
-            container.innerHTML = "";
+                    // Safe unpacking extraction for both standard and VIA_DTO page structures
+                    const assets = pageData.content;
+                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
+                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
+                    const totalElements = pageData.page ? pageData.page.totalElements : (pageData.totalElements || 0);
 
-            if (!Array.isArray(assets) || assets.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No available assets</h3>
-                        <p>There are currently no assets available for loan.</p>
-                    </div>
-                `;
+                    container.innerHTML = "";
 
-                if (assetCount) assetCount.innerText = "0 assets";
-                removePaginationControls("assetsPaginationControls");
-                return;
-            }
+                    if (!Array.isArray(assets) || assets.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <h3>No available assets</h3>
+                                <p>There are currently no assets available for loan.</p>
+                            </div>
+                        `;
+                        if (assetCount) assetCount.innerText = "0 assets";
+                        removePaginationControls("assetsPaginationControls");
+                        return;
+                    }
 
-            if (assetCount) assetCount.innerText = `${pageData.totalElements} assets available`;
-
+                    if (assetCount) assetCount.innerText = `${totalElements} assets available`;
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
@@ -266,7 +280,7 @@ function loadAvailableAssets(pageNumber) {
                 container.appendChild(card);
             });
 
-            buildPaginationControls("assetsPaginationControls", container, pageData.totalPages, pageData.number, loadAvailableAssets);
+            buildPaginationControls("assetsPaginationControls", container, totalPages, currentPage, loadAvailableAssets);
         })
         .catch(error => {
             console.error("Error loading assets:", error);
