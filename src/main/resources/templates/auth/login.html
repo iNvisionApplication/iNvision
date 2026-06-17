@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Sign In — iNVision Asset Management</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
@@ -84,6 +86,11 @@
         <p class="auth-link">
             Don't have an account? <a th:href="@{/register}">Register here</a>
         </p>
+        <p class="auth-link" style="margin-bottom: 8px;">
+            <a th:href="@{/forgot-password}">Forgot your password?</a>
+        </p>
+
+
 
         <p style="text-align:center;margin-top:24px;font-size:10px;color:var(--text-muted);letter-spacing:0.06em;">
             LOANING ASSETS. EMPOWERING POSSIBILITIES.
