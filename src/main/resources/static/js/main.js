@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const loanRequestForm = document.getElementById("loanRequestForm");
-
     if (loanRequestForm) {
         loanRequestForm.addEventListener("submit", submitLoanRequest);
     }
@@ -40,7 +39,6 @@ function loadUserLoans() {
     if (!tableBody) return;
 
     let url;
-
     if (role === "ADMIN" || role === "MANAGER") {
         url = "/api/loans";
     } else {
@@ -67,7 +65,6 @@ function loadUserLoans() {
 
             loans.forEach(loan => {
                 const row = document.createElement("tr");
-
                 row.innerHTML = `
                     <td>${loan.loanId || "N/A"}</td>
                     <td>${loan.assetTitle || "N/A"}</td>
@@ -76,7 +73,6 @@ function loadUserLoans() {
                     <td>${loan.loanPeriod || formatDateTime(loan.dueDate) || "N/A"}</td>
                     <td>${getStatusBadge(loan.status)}</td>
                 `;
-
                 tableBody.appendChild(row);
             });
         })
@@ -102,16 +98,17 @@ function submitLoanRequest(event) {
         alert("Please select an asset first.");
         return;
     }
-
     if (!userId) {
         alert("User ID is missing.");
         return;
     }
-
     if (!loanPeriod) {
         alert("Please select a loan period.");
         return;
     }
+
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     const loanRequest = {
         assetId: Number(assetId),
@@ -124,17 +121,14 @@ function submitLoanRequest(event) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-User-Id": userId
+            "X-User-Id": userId,
+            [csrfHeader]: csrfToken
         },
         body: JSON.stringify(loanRequest)
     })
         .then(async response => {
             const responseText = await response.text();
-
-            if (!response.ok) {
-                throw new Error(responseText);
-            }
-
+            if (!response.ok) throw new Error(responseText);
             return responseText ? JSON.parse(responseText) : {};
         })
         .then(() => {
@@ -157,9 +151,7 @@ function loadAvailableAssets() {
 
     fetch("/api/assets")
         .then(response => {
-            if (!response.ok) {
-                throw new Error("Failed to fetch assets");
-            }
+            if (!response.ok) throw new Error("Failed to fetch assets");
             return response.json();
         })
         .then(assets => {
@@ -172,7 +164,6 @@ function loadAvailableAssets() {
                         <p>There are currently no assets available for loan.</p>
                     </div>
                 `;
-
                 if (assetCount) assetCount.innerText = "0 assets";
                 return;
             }
@@ -182,24 +173,16 @@ function loadAvailableAssets() {
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
-
                 const imagePath = getAssetImagePath(asset.path);
 
                 card.innerHTML = `
                     <div class="asset-image-wrap">
-                        <img src="${imagePath}"
-                             alt="Asset Photo"
-                             class="asset-img"
-                             onerror="this.onerror=null; this.src='/uploads/macbook.png';">
+                        <img src="${imagePath}" alt="Asset Photo" class="asset-img" onerror="this.onerror=null; this.src='/uploads/macbook.png';">
                         ${getAssetStatusBadge(asset.status)}
                     </div>
-
-                    <button type="button"
-                            class="asset-title-btn"
-                            onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                    <button type="button" class="asset-title-btn" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
                         ${asset.title || "Untitled Asset"}
                     </button>
-
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
                         <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>
@@ -208,20 +191,17 @@ function loadAvailableAssets() {
                         <p><strong>Cost</strong><span>R${asset.cost || "0.00"}</span></p>
                     </div>
                 `;
-
                 container.appendChild(card);
             });
         })
         .catch(error => {
             console.error("Error loading assets:", error);
-
             container.innerHTML = `
                 <div class="empty-state">
                     <h3>Failed to load assets</h3>
                     <p>Please check the assets API endpoint.</p>
                 </div>
             `;
-
             if (assetCount) assetCount.innerText = "Error";
         });
 }
@@ -233,7 +213,6 @@ function openLoanPanel(assetId, assetTitle) {
 
     if (selectedAssetId) selectedAssetId.value = assetId;
     if (selectedAssetTitle) selectedAssetTitle.innerText = assetTitle;
-
     if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerText = "Submit Request";
@@ -242,53 +221,24 @@ function openLoanPanel(assetId, assetTitle) {
 
 function closeLoanPanel() {
     const panel = document.getElementById("loanRequestPanel");
-
-    if (panel) {
-        panel.classList.add("hidden");
-    }
+    if (panel) panel.classList.add("hidden");
 }
 
 // ================= USERS =================
 
 async function loadUsers() {
     const tbody = document.getElementById("usersTableBody");
-
     if (!tbody) return;
 
     try {
         const response = await fetch("/api/users");
-
-    // 1. Extract the CSRF tokens from your page head
-    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
-    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-
-    const loanRequest = {
-        assetId: Number(assetId),
-        userId: Number(userId),
-        description: description,
-        loanPeriod: loanPeriod
-    };
+        if (!response.ok) throw new Error("Failed to fetch users");
 
         const users = await response.json();
-
-    fetch("/api/loans", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-User-Id": userId,
-            [csrfHeader]: csrfToken // 2. Inject the validation token here to stop the 403 block
-        },
-        body: JSON.stringify(loanRequest)
-    })
-        .then(async response => {
-            const responseText = await response.text();
+        tbody.innerHTML = "";
 
         if (!Array.isArray(users) || users.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6">No users found</td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
             return;
         }
 
@@ -307,34 +257,31 @@ async function loadUsers() {
                 </tr>
             `;
         });
-
     } catch (error) {
         console.error("Error loading users:", error);
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6">Failed to load users</td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
     }
 }
 
 async function deleteUser(userId) {
     const confirmDelete = confirm("Are you sure you want to deactivate this user?");
-
     if (!confirmDelete) return;
+
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     try {
         const response = await fetch(`/api/users/${userId}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                [header]: token
+            }
         });
 
-        if (!response.ok) {
-            throw new Error("Failed to delete user");
-        }
+        if (!response.ok) throw new Error("Failed to delete user");
 
+        alert("User account successfully deactivated.");
         loadUsers();
-
     } catch (error) {
         console.error("Error deleting user:", error);
         alert("Failed to deactivate user.");
@@ -345,32 +292,21 @@ function editUser(userId) {
     alert("Edit form still needs to be added for user ID: " + userId);
 }
 
-// ================= HELPERS =================
+// ================= HELPERS & SESSION =================
 
 function getAssetImagePath(path) {
-    if (!path || path === "string" || path === "url_photo") {
-        return "/images/no-image.png";
-    }
-
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-        return path;
-    }
-
-    if (path.startsWith("/")) {
-        return path;
-    }
-
+    if (!path || path === "string" || path === "url_photo") return "/images/no-image.png";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    if (path.startsWith("/")) return path;
     return "/uploads/" + path;
 }
 
 function setupDueDateLimit() {
     const dueDateInput = document.getElementById("dueDate");
-
     if (!dueDateInput) return;
 
     const today = new Date();
     const maxDate = new Date();
-
     maxDate.setDate(today.getDate() + 90);
 
     dueDateInput.min = today.toISOString().split("T")[0];
@@ -379,107 +315,29 @@ function setupDueDateLimit() {
 
 function formatDateTime(value) {
     if (!value) return "N/A";
-
     return value.replace("T", " ").substring(0, 16);
 }
 
 function getStatusBadge(status) {
-    if (!status) {
-        return `<span class="status-badge">N/A</span>`;
-    }
-
-    return `
-        <span class="status-badge badge-${status.toLowerCase()}">
-            ${status}
-        </span>
-    `;
+    if (!status) return `<span class="status-badge">N/A</span>`;
+    return `<span class="status-badge badge-${status.toLowerCase()}">${status}</span>`;
 }
 
 function getAssetStatusBadge(status) {
-    if (!status) {
-        return `<span class="badge badge-retired">N/A</span>`;
-    }
-
+    if (!status) return `<span class="badge badge-retired">N/A</span>`;
     return `<span class="badge badge-${status.toLowerCase()}">${status}</span>`;
 }
 
-//Users dashboard also uses this main.js
-
-document.addEventListener("DOMContentLoaded", loadUsers);
-
-async function loadUsers() {
-    const tbody = document.getElementById("usersTableBody");
-
-    try {
-        const response = await fetch("/api/users");
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch users");
-        }
-
-        const users = await response.json();
-
-        tbody.innerHTML = "";
-
-        if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
-            return;
-        }
-
-        users.forEach(user => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${user.userId}</td> 
-                    <td>${user.name}</td>
-                    <td>${user.email}</td>
-                    <td>${user.department}</td>
-                    <td>${user.role}</td>
-                    <td>
-                        <button onclick="editUser(${user.userId})">Edit</button>
-                        <button onclick="deleteUser(${user.userId})">Deactivate</button>
-                    </td>
-                </tr>
-            `;
-        });
-
-    } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
-        console.error(error);
-    }
-}
-
-async function deleteUser(userId) {
-    const confirmDelete = confirm("Are you sure you want to delete this user?");
-    if (!confirmDelete) return;
-
-    // 1. Extract the CSRF security tokens from your page head
-    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-
-    // 2. Pass the header token along with the DELETE request
-    const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-            [header]: token
-        }
-    });
-
-    if (response.ok) {
-        alert("User account successfully deactivated.");
-        loadUsers();
-    } else {
-        alert("Failed to delete user. Ensure you have administrative privileges.");
-    }
-}
-
-function editUser(userId) {
-    alert("Edit form still needs to be added for user ID: " + userId);
+function escapeText(text) {
+    return String(text || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
 }
 
 function extendUserSession() {
     clearInterval(countdownInterval);
 
-    // Extract tokens from document headers
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
