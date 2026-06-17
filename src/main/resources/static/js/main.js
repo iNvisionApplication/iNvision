@@ -1,3 +1,4 @@
+
 // Add these pagination trackers to the top of your script
 let currentAssetsPage = 0;
 let currentLoansPage = 0;
@@ -23,6 +24,16 @@ document.addEventListener("DOMContentLoaded", function () {
     if (loanRequestForm) {
         loanRequestForm.addEventListener("submit", submitLoanRequest);
     }
+
+    const closeBtn = document.getElementById("closeErrorModalBtn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function() {
+            const backdrop = document.getElementById("errorModalBackdrop");
+            if (backdrop) {
+                backdrop.classList.remove("open");
+            }
+        });
+    }
 });
 
 function getCurrentUserId() {
@@ -30,12 +41,12 @@ function getCurrentUserId() {
     return input ? input.value : null;
 }
 
+// ================= LOANS =================
+
 function getCurrentUserRole() {
     const input = document.getElementById("currentUserRole");
     return input ? input.value.toUpperCase() : null;
 }
-
-// ================= LOANS =================
 
 function loadUserLoans(pageNumber) {
     currentLoansPage = pageNumber;
@@ -47,20 +58,21 @@ function loadUserLoans(pageNumber) {
     if (!tableBody) return;
 
     let url;
-        if (role === "ADMIN" || role === "MANAGER") {
-            url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
-        } else {
-            if (!userId) return;
-            url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
-        }
+    if (role === "ADMIN" || role === "MANAGER") {
+        url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+    } else {
+        if (!userId) return;
+        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
+    }
 
     fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error("Failed to fetch loans");
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`Server returned status ${response.status}`);
+            }
             return response.json();
         })
         .then(pageData => {
-            // Unpack paginated object array
             const loans = pageData.content;
             tableBody.innerHTML = "";
 
@@ -85,43 +97,38 @@ function loadUserLoans(pageNumber) {
                 tableBody.appendChild(row);
             });
 
-            // Build page bar positioned right below the table layout boundary box
             buildPaginationControls("loansPaginationControls", tableWrapper, pageData.totalPages, pageData.number, loadUserLoans);
         })
         .catch(error => {
             console.error("Error loading loans:", error);
             tableBody.innerHTML = `<tr><td colspan="6">Failed to load loans.</td></tr>`;
+            showErrorModal("System Error", "Failed to retrieve loan history files from the server. Please try again later.");
         });
 }
 
 function submitLoanRequest(event) {
     event.preventDefault();
 
-    const submitBtn = document.getElementById("submitLoanBtn");
     const userId = getCurrentUserId();
     const assetId = document.getElementById("selectedAssetId")?.value;
     const loanPeriod = document.getElementById("loanPeriod")?.value;
     const description = document.getElementById("description")?.value;
 
     if (!assetId) {
-        alert("Please select an asset first.");
+        showErrorModal("Selection Required", "Please select an asset from the active catalog inventory first.");
         return;
     }
-
     if (!userId) {
-        alert("User ID is missing.");
+        showErrorModal("Identity Error", "User contextual assignment metadata missing.");
         return;
     }
-
     if (!loanPeriod) {
-        alert("Please select a loan period.");
+        showErrorModal("Timeline Required", "Please specify a clear operational loan duration period.");
         return;
     }
 
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add("btn-loading");
-    }
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     const loanRequest = {
         assetId: Number(assetId),
@@ -134,7 +141,8 @@ function submitLoanRequest(event) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-User-Id": userId
+            "X-User-Id": userId,
+            [csrfHeader]: csrfToken
         },
         body: JSON.stringify(loanRequest)
     })
@@ -142,7 +150,13 @@ function submitLoanRequest(event) {
             const responseText = await response.text();
 
             if (!response.ok) {
-                throw new Error(responseText);
+                let errorData;
+                try {
+                    errorData = JSON.parse(responseText);
+                } catch (e) {
+                    errorData = { message: responseText || `Status ${response.status}: Server encountered an operational failure.` };
+                }
+                throw errorData;
             }
 
             return responseText ? JSON.parse(responseText) : {};
@@ -151,19 +165,35 @@ function submitLoanRequest(event) {
             window.location.href = "/loans";
         })
         .catch(error => {
-            console.error("Error submitting loan request:", error);
-
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove("btn-loading");
-                submitBtn.textContent = "Submit Request";
+            if (error.code === "BAD_LOAN_REQUEST") {
+                showErrorModal(
+                    "Active Request Found",
+                    "You already have a pending or active loan for this asset. Please track its approval progress via your dashboard timeline."
+                );
+            } else {
+                showErrorModal(
+                    "Submission Refused",
+                    error.message || "An unresolved network transmission layout conflict has occurred."
+                );
             }
-
-            alert("Failed to submit loan request.");
         });
 }
 
 // ================= ASSETS =================
+
+function showErrorModal(title, message) {
+    const backdrop = document.getElementById("errorModalBackdrop");
+    const titleText = document.getElementById("errorModalTitle");
+    const bodyText = document.getElementById("errorModalBody");
+
+    if (backdrop && titleText && bodyText) {
+        titleText.innerText = title;
+        bodyText.innerText = message;
+        backdrop.classList.add("open");
+    } else {
+        alert(`${title}\n\n${message}`);
+    }
+}
 
 function loadAvailableAssets(pageNumber) {
     currentAssetsPage = pageNumber;
@@ -173,14 +203,13 @@ function loadAvailableAssets(pageNumber) {
     if (!container) return;
 
     fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
-                throw new Error("Failed to fetch assets");
+                throw new Error(`Server returned status ${response.status}`);
             }
             return response.json();
         })
         .then(pageData => {
-            // 1. Unpack the structural content collection
             const assets = pageData.content;
             container.innerHTML = "";
 
@@ -199,17 +228,13 @@ function loadAvailableAssets(pageNumber) {
 
             if (assetCount) assetCount.innerText = `${pageData.totalElements} assets available`;
 
-            // Render asset cards
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
 
                 const imagePath = getAssetImagePath(asset.path);
-
-                // Check if the asset is available for a new loan request
                 const isLoaned = asset.status.toUpperCase() === "LOANED";
 
-                // Dynamically change button behavior based on operational status
                 const actionButton = isLoaned
                     ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7;" disabled>
                             ${asset.title || "Untitled Asset"} (Borrowed)
@@ -228,11 +253,6 @@ function loadAvailableAssets(pageNumber) {
                     </div>
 
                     ${actionButton}
-                    <button type="button"
-                            class="asset-title-btn"
-                            onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
-                        ${asset.title || "Untitled Asset"}
-                    </button>
 
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
@@ -246,12 +266,12 @@ function loadAvailableAssets(pageNumber) {
                 container.appendChild(card);
             });
 
-            // 2. Build the navigation buttons bar underneath the container
             buildPaginationControls("assetsPaginationControls", container, pageData.totalPages, pageData.number, loadAvailableAssets);
         })
         .catch(error => {
             console.error("Error loading assets:", error);
             container.innerHTML = `<div class="empty-state"><h3>Failed to load assets</h3></div>`;
+            showErrorModal("Catalog Error", "Failed to load the available asset catalog due to a server connection failure.");
         });
 }
 
@@ -270,15 +290,14 @@ function openLoanPanel(assetId, assetTitle) {
     }
 }
 
+// ================= USERS =================
+
 function closeLoanPanel() {
     const panel = document.getElementById("loanRequestPanel");
-
     if (panel) {
         panel.classList.add("hidden");
     }
 }
-
-// ================= USERS =================
 
 async function loadUsers() {
     const tbody = document.getElementById("usersTableBody");
@@ -289,19 +308,14 @@ async function loadUsers() {
         const response = await fetch("/api/users");
 
         if (!response.ok) {
-            throw new Error("Failed to fetch users");
+            throw new Error(`Server returned status ${response.status}`);
         }
 
         const users = await response.json();
-
         tbody.innerHTML = "";
 
         if (!Array.isArray(users) || users.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6">No users found</td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
             return;
         }
 
@@ -323,39 +337,40 @@ async function loadUsers() {
 
     } catch (error) {
         console.error("Error loading users:", error);
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6">Failed to load users</td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
+        showErrorModal("Data Sync Failure", "Failed to retrieve registered systems users from the database.");
     }
 }
 
 async function deleteUser(userId) {
     const confirmDelete = confirm("Are you sure you want to deactivate this user?");
-
     if (!confirmDelete) return;
+
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     try {
         const response = await fetch(`/api/users/${userId}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                [header]: token
+            }
         });
 
         if (!response.ok) {
-            throw new Error("Failed to delete user");
+            throw new Error(`Server returned status ${response.status}`);
         }
 
         loadUsers();
 
     } catch (error) {
         console.error("Error deleting user:", error);
-        alert("Failed to deactivate user.");
+        showErrorModal("Action Aborted", "Failed to deactivate the user account due to a server-side operational error.");
     }
 }
 
 function editUser(userId) {
-    alert("Edit form still needs to be added for user ID: " + userId);
+    showErrorModal("Preview Feature", "The user configuration adjustment view still needs to be built out for user ID: " + userId);
 }
 
 // ================= HELPERS =================
@@ -364,26 +379,21 @@ function getAssetImagePath(path) {
     if (!path || path === "string" || path === "url_photo") {
         return "/images/no-image.png";
     }
-
     if (path.startsWith("http://") || path.startsWith("https://")) {
         return path;
     }
-
     if (path.startsWith("/")) {
         return path;
     }
-
     return "/uploads/" + path;
 }
 
 function setupDueDateLimit() {
     const dueDateInput = document.getElementById("dueDate");
-
     if (!dueDateInput) return;
 
     const today = new Date();
     const maxDate = new Date();
-
     maxDate.setDate(today.getDate() + 90);
 
     dueDateInput.min = today.toISOString().split("T")[0];
@@ -392,27 +402,16 @@ function setupDueDateLimit() {
 
 function formatDateTime(value) {
     if (!value) return "N/A";
-
     return value.replace("T", " ").substring(0, 16);
 }
 
 function getStatusBadge(status) {
-    if (!status) {
-        return `<span class="status-badge">N/A</span>`;
-    }
-
-    return `
-        <span class="status-badge badge-${status.toLowerCase()}">
-            ${status}
-        </span>
-    `;
+    if (!status) return `<span class="status-badge">N/A</span>`;
+    return `<span class="status-badge badge-${status.toLowerCase()}">${status}</span>`;
 }
 
 function getAssetStatusBadge(status) {
-    if (!status) {
-        return `<span class="badge badge-retired">N/A</span>`;
-    }
-
+    if (!status) return `<span class="badge badge-retired">N/A</span>`;
     return `<span class="badge badge-${status.toLowerCase()}">${status}</span>`;
 }
 
@@ -443,19 +442,18 @@ function extendUserSession() {
             window.location.href = "/login";
         }
     })
-    .catch(() => {
+    .catch((error) => {
+        console.error("Keep alive failure:", error);
         window.location.href = "/login";
     });
 }
 
 function buildPaginationControls(controlsId, targetSibling, totalPages, currentPage, navigationCallback) {
-    // Look for an existing bar element block, or generate a fresh one
     let controlsContainer = document.getElementById(controlsId);
     if (!controlsContainer) {
         controlsContainer = document.createElement("div");
         controlsContainer.id = controlsId;
         controlsContainer.className = "pagination-container";
-        // Append right beneath the targeted content presentation space
         targetSibling.parentNode.insertBefore(controlsContainer, targetSibling.nextSibling);
     }
 
@@ -466,14 +464,12 @@ function buildPaginationControls(controlsId, targetSibling, totalPages, currentP
 
     let htmlContent = `<ul class="pagination-list">`;
 
-    // Previous Navigation Controller link
     htmlContent += `
         <li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
             <button class="page-link" type="button" data-page="${currentPage - 1}">Previous</button>
         </li>
     `;
 
-    // Numerical Intercept indices
     for (let i = 0; i < totalPages; i++) {
         htmlContent += `
             <li class="page-item ${i === currentPage ? 'active' : ''}">
@@ -482,7 +478,6 @@ function buildPaginationControls(controlsId, targetSibling, totalPages, currentP
         `;
     }
 
-    // Next Navigation Controller link
     htmlContent += `
         <li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
             <button class="page-link" type="button" data-page="${currentPage + 1}">Next</button>
@@ -492,7 +487,6 @@ function buildPaginationControls(controlsId, targetSibling, totalPages, currentP
     htmlContent += `</ul>`;
     controlsContainer.innerHTML = htmlContent;
 
-    // Attach click events dynamically to prevent inline JS conflicts
     controlsContainer.querySelectorAll(".page-link").forEach(button => {
         button.addEventListener("click", function () {
             const TargetPage = parseInt(this.getAttribute("data-page"));
