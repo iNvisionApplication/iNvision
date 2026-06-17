@@ -9,6 +9,7 @@ import com.invision.web.Invision.exception.user.PasswordMismatchException;
 import com.invision.web.Invision.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -71,5 +72,10 @@ public class AuthController {
         }
 
         return "redirect:/login?registered";
+    }
+
+    @GetMapping("/api/auth/keep-alive")
+    public ResponseEntity<Void> keepSessionAlive() {
+        return ResponseEntity.ok().build();
     }
 }
