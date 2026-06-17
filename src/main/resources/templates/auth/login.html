@@ -67,13 +67,17 @@
                        placeholder="••••••••" autocomplete="current-password" required/>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                Sign In
+            <button type="submit" id="loginBtn" class="btn btn-primary btn-full" style="margin-top:8px;">
+                <span id="loginIcon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                         <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                </span>
+
+                <span id="loginBtnText">Sign In</span>
+                <span id="loginSpinner" class="login-spinner"></span>
             </button>
         </form>
 
@@ -88,6 +92,18 @@
         </p>
     </div>
 </div>
+<script>
+    const loginForm = document.querySelector("form");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginBtnText = document.getElementById("loginBtnText");
+
+    loginForm.addEventListener("submit", function () {
+        loginBtn.classList.add("loading");
+        loginBtn.disabled = true;
+        loginBtnText.textContent = "Signing In...";
+    });
+</script>
+
 <script th:src="@{/js/main.js}"></script>
 </body>
 </html>

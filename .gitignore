@@ -95,3 +95,4 @@
 /target/classes/com/invision/web/Invision/service/UserService.class
 /target/classes/com/invision/web/Invision/controller/pages/UsersPageController.class
 /target/classes/com/invision/web/Invision/dto/UserUpdateDTO.class
+/.idea/git_toolbox_prj.xml
