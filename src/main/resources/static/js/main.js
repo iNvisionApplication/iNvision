@@ -1,7 +1,7 @@
 // Add these pagination trackers to the top of your script
 let currentAssetsPage = 0;
 let currentLoansPage = 0;
-const defaultPageSize = 9; // Fits a 3x3 dashboard layout grid beautifully
+const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
 
 document.addEventListener("DOMContentLoaded", function () {
     setupDueDateLimit();
@@ -46,12 +46,12 @@ function loadUserLoans(pageNumber) {
     if (!tableBody) return;
 
     let url;
-    if (role === "ADMIN" || role === "MANAGER") {
-        url = `/api/loans?page=${pageNumber}&size=10`;
-    } else {
-        if (!userId) return;
-        url = `/api/loans/user/${userId}?page=${pageNumber}&size=10`;
-    }
+        if (role === "ADMIN" || role === "MANAGER") {
+            url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+        } else {
+            if (!userId) return;
+            url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
+        }
 
     fetch(url)
         .then(response => {
@@ -185,14 +185,26 @@ function loadAvailableAssets(pageNumber) {
                 card.className = "asset-card";
                 const imagePath = getAssetImagePath(asset.path);
 
+                // Check if the asset is available for a new loan request
+                const isLoaned = asset.status.toUpperCase() === "LOANED";
+
+                // Dynamically change button behavior based on operational status
+                const actionButton = isLoaned
+                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7;" disabled>
+                            ${asset.title || "Untitled Asset"} (Borrowed)
+                       </button>`
+                    : `<button type="button" class="asset-title-btn" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                            ${asset.title || "Untitled Asset"}
+                       </button>`;
+
                 card.innerHTML = `
                     <div class="asset-image-wrap">
                         <img src="${imagePath}" alt="Asset Photo" class="asset-img" onerror="this.onerror=null; this.src='/uploads/macbook.png';">
                         ${getAssetStatusBadge(asset.status)}
                     </div>
-                    <button type="button" class="asset-title-btn" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
-                        ${asset.title || "Untitled Asset"}
-                    </button>
+
+                    ${actionButton}
+
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
                         <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>

@@ -10,9 +10,11 @@
 
 <body>
 <section>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
-    <input type="hidden" id="currentUserId" th:value="${currentUserId}"/>
-    <input type="hidden" id="currentUserRole" th:value="${currentUserRole}">
+    <input type="hidden" id="currentUserId" th:value="${#authentication.principal.id}"/>
+    <input type="hidden" id="currentUserRole" th:value="${#authentication.principal.authorities[0].authority.replace('ROLE_', '')}"/>
 
     <div class="page-header">
         <div>
@@ -25,7 +27,7 @@
         </a>
     </div>
 
-    <div class="table-card">
+    <div class="table-wrapper">
         <table class="data-table">
             <thead>
             <tr>

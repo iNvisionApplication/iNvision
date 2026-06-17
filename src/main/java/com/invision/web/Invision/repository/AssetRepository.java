@@ -33,5 +33,6 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     long countByStatus(AssetStatus status);
 
-    Page<Asset> findByStatus(AssetStatus status, Pageable pageable);
+    // Fetches assets matching any status provided in the list
+    Page<Asset> findByStatusIn(List<AssetStatus> statuses, Pageable pageable);
 }

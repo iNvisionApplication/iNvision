@@ -14,10 +14,13 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -321,13 +324,29 @@ public class AssetService {
         return null;
     }
 
-    public Page<AssetResponseDTO> getAvailableAssets(int page, int size) {
-        // Creates pagination configuration sorting assets alphabetically by title
+    public Page<AssetResponseDTO> getAssetsForCurrentUser(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("title").ascending());
 
-        Page<Asset> assetPage = assetRepository.findByStatus(AssetStatus.AVAILABLE, pageable);
+        // 1. Grab the active security session details
+        @Nullable Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // .map() here converts the internal content list while keeping the page counters intact
+        boolean isAdminOrManager = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+
+        Page<Asset> assetPage;
+
+        // 2. Filter data matching identity bounds
+        if (isAdminOrManager) {
+            // Admins & Managers see ALL assets (AVAILABLE, LOANED, MAINTENANCE, RETIRED, etc.)
+            assetPage = assetRepository.findAll(pageable);
+        } else {
+            // Borrowers only see AVAILABLE and LOANED assets
+            assetPage = assetRepository.findByStatusIn(
+                    List.of(AssetStatus.AVAILABLE, AssetStatus.LOANED),
+                    pageable
+            );
+        }
+
         return assetPage.map(assetMapper::AssetToAssetResponseDTO);
     }
 

@@ -127,7 +127,7 @@ public class AssetController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(assetService.getAvailableAssets(page, size));
+        return ResponseEntity.ok(assetService.getAssetsForCurrentUser(page, size));
     }
 
 }
