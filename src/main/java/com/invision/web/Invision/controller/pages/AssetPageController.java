@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 public class AssetPageController {
@@ -36,6 +37,19 @@ public class AssetPageController {
         model.addAttribute("currentUri", "/assets");
 
         return "assets/add-assets";
+    }
+
+    @GetMapping("/assets/edit/{assetId}")
+    public String editAssetPage(
+            @PathVariable Long assetId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Model model) {
+
+        model.addAttribute("assetId", assetId);
+        model.addAttribute("currentUserId", userDetails.getId());
+        model.addAttribute("currentUri", "/assets");
+
+        return "assets/edit-asset";
     }
 
 }

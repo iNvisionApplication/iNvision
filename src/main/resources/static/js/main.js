@@ -6,6 +6,23 @@ const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
 
 document.addEventListener("DOMContentLoaded", function () {
 
+// 1. Check for incoming success parameters from incoming redirects
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("success") === "true") {
+        const message = urlParams.get("msg") || "Action processed successfully.";
+
+        // Spawn the dynamic toast
+        showToast(message);
+
+        // Clean up the browser URL string so the params vanish without reloading the page
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // If we are on the edit page, automatically pre-load the asset's current data profiles
+    if (document.getElementById("updateAssetForm")) {
+        prefillAssetDataFields();
+        document.getElementById("updateAssetForm").addEventListener("submit", submitAssetUpdate);
+    }
    // Bind CSV Template Downloader
     const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
     if (downloadTemplateBtn) {
@@ -310,8 +327,9 @@ function submitBulkImport(event) {
     });
 }
 
+
 function loadAvailableAssets(pageNumber) {
-if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
+    if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         pageNumber = 0;
     }
     currentAssetsPage = pageNumber;
@@ -319,6 +337,10 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     const assetCount = document.getElementById("assetCount");
 
     if (!container) return;
+
+    // Resolve current logged-in role matrix state context
+    const role = document.getElementById("currentUserRole")?.value || "BORROWER";
+    const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
     fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
         .then(async response => {
@@ -328,39 +350,40 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             return response.json();
         })
         .then(pageData => {
-                    // Safe unpacking extraction for both standard and VIA_DTO page structures
-                    const assets = pageData.content;
-                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
-                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
-                    const totalElements = pageData.page ? pageData.page.totalElements : (pageData.totalElements || 0);
+            // Safe unpacking extraction for both standard and VIA_DTO page structures
+            const assets = pageData.content;
+            const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
+            const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
+            const totalElements = pageData.page ? pageData.page.totalElements : (pageData.totalElements || 0);
 
-                    container.innerHTML = "";
+            container.innerHTML = "";
 
-                    if (!Array.isArray(assets) || assets.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-state">
-                                <h3>No available assets</h3>
-                                <p>There are currently no assets available for loan.</p>
-                            </div>
-                        `;
-                        if (assetCount) assetCount.innerText = "0 assets";
-                        removePaginationControls("assetsPaginationControls");
-                        return;
-                    }
+            if (!Array.isArray(assets) || assets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No available assets</h3>
+                        <p>There are currently no assets available for loan.</p>
+                    </div>
+                `;
+                if (assetCount) assetCount.innerText = "0 assets";
+                removePaginationControls("assetsPaginationControls");
+                return;
+            }
 
-                    if (assetCount) assetCount.innerText = `${totalElements} assets available`;
+            if (assetCount) assetCount.innerText = `${totalElements} assets available`;
+
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
 
                 const imagePath = getAssetImagePath(asset.path);
-                const isLoaned = asset.status.toUpperCase() === "LOANED";
+                const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
 
                 const actionButton = isLoaned
-                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7;" disabled>
+                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
                             ${asset.title || "Untitled Asset"} (Borrowed)
                        </button>`
-                    : `<button type="button" class="asset-title-btn" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                    : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
                             ${asset.title || "Untitled Asset"}
                        </button>`;
 
@@ -373,7 +396,14 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                         ${getAssetStatusBadge(asset.status)}
                     </div>
 
-                    ${actionButton}
+                    <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
+                        ${actionButton}
+                        ${isAdminOrManager ? `
+                            <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                                ⚙️ Edit
+                            </a>
+                        ` : ''}
+                    </div>
 
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
@@ -673,4 +703,123 @@ function downloadCSVTemplate(event) {
     temporaryLink.click();
     document.body.removeChild(temporaryLink);
     URL.revokeObjectURL(url); // Clean browser memory allocation signatures
+}
+
+// Fetches current database configurations to pre-populate inputs on form mount
+function prefillAssetDataFields() {
+    const assetId = document.getElementById("targetAssetId").value;
+
+    fetch(`/api/assets/${assetId}`) // Targets your standard GET mapping for single entities
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to resolve asset record data profiles.");
+            return response.json();
+        })
+        .then(asset => {
+            document.getElementById("title").value = asset.title || "";
+            document.getElementById("serialNumber").value = asset.serialNumber || "";
+            document.getElementById("category").value = asset.category || "";
+            document.getElementById("condition").value = asset.condition || "";
+            document.getElementById("location").value = asset.location || "";
+            document.getElementById("cost").value = asset.cost || 0.00;
+            document.getElementById("path").value = asset.photoPath || asset.path || "";
+        })
+        .catch(error => {
+            console.error("Error loading asset details:", error);
+            alert("Could not load current asset profiles for modifications.");
+        });
+}
+
+// Executes the final PUT request transaction cascade
+function submitAssetUpdate(event) {
+    event.preventDefault();
+
+    const assetId = document.getElementById("targetAssetId").value;
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const updatedPayload = {
+        title: document.getElementById("title").value,
+        serialNumber: document.getElementById("serialNumber").value,
+        category: document.getElementById("category").value,
+        condition: document.getElementById("condition").value,
+        location: document.getElementById("location").value,
+        cost: Number(document.getElementById("cost").value),
+        path: document.getElementById("path").value,
+
+        // Generates the clean timestamp signature your backend expects
+        acquisitionDate: new Date().toISOString().slice(0, 19)
+    };
+
+    fetch(`/api/assets/update/${assetId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify(updatedPayload)
+    })
+    .then(async response => {
+        const textMessage = await response.text();
+        if (response.ok) {
+            // Pass a clean flag and the message to the destination page
+            window.location.href = `/assets?success=true&msg=${encodeURIComponent(textMessage)}`;
+        } else {
+            const textMessage = await response.text();
+            alert("Update Rejected: " + textMessage); // Keep error alert or use error modal
+        }
+    })
+    .catch(error => {
+        console.error("Error committing PUT update transaction matrix:", error);
+        alert("A system connectivity breakdown blocked processing updates.");
+    });
+}
+
+// 2. Add the dynamic toast rendering engine to the bottom of main.js
+function showToast(message) {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "toast-container";
+
+        // ─── FORCE INLINE STYLES TO BYPASS ALL CSS CACHING AND GRID OVERRIDES ───
+        toastContainer.style.cssText = `
+            position: fixed !important;
+            top: 24px !important;
+            right: 24px !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            pointer-events: none !important;
+            width: auto !important;
+            height: auto !important;
+        `;
+
+        document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = "toast-notification toast-success";
+
+    // Force a strict fixed width directly on the notification card so it can never squash
+    toast.style.cssText = `
+        width: 340px !important;
+        max-width: calc(100vw - 48px) !important;
+        box-sizing: border-box !important;
+        pointer-events: auto !important;
+    `;
+
+    toast.innerHTML = `
+        <span class="toast-icon">✓</span>
+        <span class="toast-message" style="white-space: normal !important; word-break: break-word !important;">${message}</span>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    // Smoothly strip away element references after animations conclude
+    setTimeout(() => {
+        toast.classList.add("toast-fade-out");
+        toast.addEventListener("animationend", () => toast.remove());
+    }, 4000);
 }
