@@ -8,5 +8,5 @@ import com.invision.web.Invision.enums.LoanStatus;
 import java.time.LocalDateTime;
 
 public record LoanResponseDTO(String loanId, String assetTitle, String description, LocalDateTime requestDate,
-                              LoanStatus status, LoanPeriod loanPeriod, AssetLoanStatus assetLoanStatus) {
+                              LoanStatus status, LocalDateTime dueDate, AssetLoanStatus assetLoanStatus) {
 }

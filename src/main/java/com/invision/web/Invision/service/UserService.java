@@ -87,6 +87,24 @@ public class UserService {
         auditLogService.logUpdate(getCurrentUserId(), EntityType.USER, userId, "Status: ACTIVE", "Status: DEACTIVATED");
     }
 
+    // ADMIN: ACTIVATE USER
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void activateUser(long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        user.setActive(true);
+        userRepository.save(user);
+
+        auditLogService.logUpdate(
+                getCurrentUserId(),
+                EntityType.USER,
+                userId,
+                "Status: DEACTIVATED",
+                "Status: ACTIVE"
+        );
+    }
 
     public Long getCurrentUserId() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
