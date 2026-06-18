@@ -1313,6 +1313,49 @@ tbody td.muted { color: var(--text-secondary); font-size: 12px; }
     }
 }
 
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+.pagination-list {
+    display: flex;
+    list-style: none;
+    gap: 0.5rem;
+    padding: 0;
+}
+
+.page-item .page-link {
+    background-color: #ffffff;
+    border: 1px solid #dcdcdc;
+    color: #333333;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Highlight style rule indicating user's exact current page view */
+.page-item.active .page-link {
+    background-color: #0056b3; /* Your brand primary accent color */
+    color: #ffffff;
+    border-color: #0056b3;
+    cursor: default;
+}
+
+/* Dim style rule locking out impossible directions (e.g. going back on page 1) */
+.page-item.disabled .page-link {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+}
+
+.page-item:not(.active):not(.disabled) .page-link:hover {
+    background-color: #f8f9fa;
+    border-color: #b5b5b5;
 .btn.btn-loading {
     pointer-events: none;
     opacity: 0.8;

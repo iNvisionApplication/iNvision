@@ -4,7 +4,6 @@ import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserLoginDTO;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.dto.UserUpdateDTO;
-import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.exception.user.UserNotFoundException;

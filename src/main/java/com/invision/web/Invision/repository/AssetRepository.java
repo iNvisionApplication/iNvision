@@ -5,6 +5,8 @@ import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.enums.Category;
 import com.invision.web.Invision.enums.AssetStatus;
 import com.invision.web.Invision.enums.Condition;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     );
 
     long countByStatus(AssetStatus status);
+
+    // Fetches assets matching any status provided in the list
+    Page<Asset> findByStatusIn(List<AssetStatus> statuses, Pageable pageable);
 }
