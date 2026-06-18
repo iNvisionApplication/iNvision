@@ -5,6 +5,41 @@ let currentLoansPage = 0;
 const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
 
 document.addEventListener("DOMContentLoaded", function () {
+
+// 1. Check for incoming success parameters from incoming redirects
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("success") === "true") {
+        const message = urlParams.get("msg") || "Action processed successfully.";
+
+        // Spawn the dynamic toast
+        showToast(message);
+
+        // Clean up the browser URL string so the params vanish without reloading the page
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // If we are on the edit page, automatically pre-load the asset's current data profiles
+    if (document.getElementById("updateAssetForm")) {
+        prefillAssetDataFields();
+        document.getElementById("updateAssetForm").addEventListener("submit", submitAssetUpdate);
+    }
+   // Bind CSV Template Downloader
+    const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
+    if (downloadTemplateBtn) {
+        downloadTemplateBtn.addEventListener("click", downloadCSVTemplate);
+    }
+
+    // Bind Manual Asset Creation Form
+    const manualAssetForm = document.getElementById("manualAssetForm");
+    if (manualAssetForm) {
+         manualAssetForm.addEventListener("submit", submitManualAsset);
+    }
+
+       // Bind Bulk CSV Import Form
+    const bulkUploadForm = document.getElementById("bulkUploadForm");
+    if (bulkUploadForm) {
+          bulkUploadForm.addEventListener("submit", submitBulkImport);
+    }
     setupDueDateLimit();
 
     if (document.getElementById("loanHistoryBody")) {
@@ -203,8 +238,98 @@ function showErrorModal(title, message) {
     }
 }
 
+function submitManualAsset(event) {
+    event.preventDefault();
+
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    // Gather text values to match your backend AssetRequestDTO fields
+    const assetPayload = {
+        title: document.getElementById("title").value,
+        serialNumber: document.getElementById("serialNumber").value,
+        category: document.getElementById("category").value,
+        condition: document.getElementById("condition").value,
+        location: document.getElementById("location").value,
+        cost: Number(document.getElementById("cost").value),
+        path: document.getElementById("path").value,
+
+        // Generates today's date dynamically in YYYY-MM-DD format
+        acquisitionDate: new Date().toISOString().slice(0, 19)
+    };
+
+    fetch("/api/assets", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify(assetPayload)
+    })
+    .then(async response => {
+        if (response.ok) {
+            alert("Asset registered successfully!");
+            window.location.href = "/assets";
+        } else {
+            const errorText = await response.text();
+            alert("Failed to save asset: " + errorText);
+        }
+    })
+    .catch(error => {
+        console.error("Error saving asset:", error);
+        alert("An error occurred while connecting to the server.");
+    });
+}
+
+function submitBulkImport(event) {
+    event.preventDefault();
+
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const fileInput = document.getElementById("csvFile");
+    if (!fileInput.files.length) {
+        alert("Please select a valid CSV manifest file first.");
+        return;
+    }
+
+    // Wrap the file inside a multi-part boundary form container
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const executeBulkBtn = document.getElementById("executeBulkBtn");
+    executeBulkBtn.disabled = true;
+    executeBulkBtn.textContent = "Processing Ingestion...";
+
+    fetch("/api/assets/import", {
+        method: "POST",
+        headers: {
+            [csrfHeader]: csrfToken // Send security token, but omit Content-Type entirely!
+        },
+        body: formData
+    })
+    .then(async response => {
+        const message = await response.text();
+        if (response.ok) {
+            alert("Bulk Processing Complete: " + message);
+            window.location.href = "/dashboard";
+        } else {
+            alert("Import Rejected: " + message);
+            executeBulkBtn.disabled = false;
+            executeBulkBtn.textContent = "Process Spreadsheet Manifest";
+        }
+    })
+    .catch(error => {
+        console.error("Error executing bulk upload:", error);
+        alert("A connectivity drop or internal error stopped your bulk manifest import.");
+        executeBulkBtn.disabled = false;
+        executeBulkBtn.textContent = "Process Spreadsheet Manifest";
+    });
+}
+
+
 function loadAvailableAssets(pageNumber) {
-if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
+    if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         pageNumber = 0;
     }
     currentAssetsPage = pageNumber;
@@ -212,6 +337,10 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     const assetCount = document.getElementById("assetCount");
 
     if (!container) return;
+
+    // Resolve current logged-in role matrix state context
+    const role = document.getElementById("currentUserRole")?.value || "BORROWER";
+    const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
     fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
         .then(async response => {
@@ -221,39 +350,40 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             return response.json();
         })
         .then(pageData => {
-                    // Safe unpacking extraction for both standard and VIA_DTO page structures
-                    const assets = pageData.content;
-                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
-                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
-                    const totalElements = pageData.page ? pageData.page.totalElements : (pageData.totalElements || 0);
+            // Safe unpacking extraction for both standard and VIA_DTO page structures
+            const assets = pageData.content;
+            const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
+            const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
+            const totalElements = pageData.page ? pageData.page.totalElements : (pageData.totalElements || 0);
 
-                    container.innerHTML = "";
+            container.innerHTML = "";
 
-                    if (!Array.isArray(assets) || assets.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-state">
-                                <h3>No available assets</h3>
-                                <p>There are currently no assets available for loan.</p>
-                            </div>
-                        `;
-                        if (assetCount) assetCount.innerText = "0 assets";
-                        removePaginationControls("assetsPaginationControls");
-                        return;
-                    }
+            if (!Array.isArray(assets) || assets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No available assets</h3>
+                        <p>There are currently no assets available for loan.</p>
+                    </div>
+                `;
+                if (assetCount) assetCount.innerText = "0 assets";
+                removePaginationControls("assetsPaginationControls");
+                return;
+            }
 
-                    if (assetCount) assetCount.innerText = `${totalElements} assets available`;
+            if (assetCount) assetCount.innerText = `${totalElements} assets available`;
+
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
 
                 const imagePath = getAssetImagePath(asset.path);
-                const isLoaned = asset.status.toUpperCase() === "LOANED";
+                const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
 
                 const actionButton = isLoaned
-                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7;" disabled>
+                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
                             ${asset.title || "Untitled Asset"} (Borrowed)
                        </button>`
-                    : `<button type="button" class="asset-title-btn" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                    : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
                             ${asset.title || "Untitled Asset"}
                        </button>`;
 
@@ -266,7 +396,14 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                         ${getAssetStatusBadge(asset.status)}
                     </div>
 
-                    ${actionButton}
+                    <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
+                        ${actionButton}
+                        ${isAdminOrManager ? `
+                            <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                                ⚙️ Edit
+                            </a>
+                        ` : ''}
+                    </div>
 
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
@@ -519,4 +656,170 @@ function removePaginationControls(controlsId) {
     if (controlsContainer) {
         controlsContainer.remove();
     }
+}
+
+function downloadCSVTemplate(event) {
+    event.preventDefault();
+
+    // 1. Define the exact headers your Apache Commons CSV parser expects
+    const headers = [
+        "title",
+        "category",
+        "serial_number",
+        "acquisition_date",
+        "cost",
+        "location",
+        "condition",
+        "status",
+        "photo_path"
+    ];
+
+    // 2. Supply an explicit baseline reference row to guide data entry
+    const sampleRow = [
+        "MacBook Pro 16-inch M4",
+        "AUDIO",
+        "SN-INV778899",
+        "2026-06-18 10:00:00", // Matches your exact backend 'yyyy-MM-dd HH:mm:ss' formatter
+        "45000.00",
+        "AdminOffice",        // Matches your capitalized Java Enum location
+        "GOOD",               // Matches upper-case condition
+        "AVAILABLE",          // Matches upper-case status
+        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8"
+    ];
+
+    // 3. Compile lines and convert into a downloadable raw text blob context
+    const csvContent = [headers.join(","), sampleRow.join(",")].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    // 4. Create a virtual download link element node
+    const temporaryLink = document.createElement("a");
+    temporaryLink.setAttribute("href", url);
+    temporaryLink.setAttribute("download", "invision_asset_import_template.csv");
+    temporaryLink.style.visibility = "hidden";
+
+    // 5. Append, click to trigger download window, and strip away trash nodes
+    document.body.appendChild(temporaryLink);
+    temporaryLink.click();
+    document.body.removeChild(temporaryLink);
+    URL.revokeObjectURL(url); // Clean browser memory allocation signatures
+}
+
+// Fetches current database configurations to pre-populate inputs on form mount
+function prefillAssetDataFields() {
+    const assetId = document.getElementById("targetAssetId").value;
+
+    fetch(`/api/assets/${assetId}`) // Targets your standard GET mapping for single entities
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to resolve asset record data profiles.");
+            return response.json();
+        })
+        .then(asset => {
+            document.getElementById("title").value = asset.title || "";
+            document.getElementById("serialNumber").value = asset.serialNumber || "";
+            document.getElementById("category").value = asset.category || "";
+            document.getElementById("condition").value = asset.condition || "";
+            document.getElementById("location").value = asset.location || "";
+            document.getElementById("cost").value = asset.cost || 0.00;
+            document.getElementById("path").value = asset.photoPath || asset.path || "";
+        })
+        .catch(error => {
+            console.error("Error loading asset details:", error);
+            alert("Could not load current asset profiles for modifications.");
+        });
+}
+
+// Executes the final PUT request transaction cascade
+function submitAssetUpdate(event) {
+    event.preventDefault();
+
+    const assetId = document.getElementById("targetAssetId").value;
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const updatedPayload = {
+        title: document.getElementById("title").value,
+        serialNumber: document.getElementById("serialNumber").value,
+        category: document.getElementById("category").value,
+        condition: document.getElementById("condition").value,
+        location: document.getElementById("location").value,
+        cost: Number(document.getElementById("cost").value),
+        path: document.getElementById("path").value,
+
+        // Generates the clean timestamp signature your backend expects
+        acquisitionDate: new Date().toISOString().slice(0, 19)
+    };
+
+    fetch(`/api/assets/update/${assetId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify(updatedPayload)
+    })
+    .then(async response => {
+        const textMessage = await response.text();
+        if (response.ok) {
+            // Pass a clean flag and the message to the destination page
+            window.location.href = `/assets?success=true&msg=${encodeURIComponent(textMessage)}`;
+        } else {
+            const textMessage = await response.text();
+            alert("Update Rejected: " + textMessage); // Keep error alert or use error modal
+        }
+    })
+    .catch(error => {
+        console.error("Error committing PUT update transaction matrix:", error);
+        alert("A system connectivity breakdown blocked processing updates.");
+    });
+}
+
+// 2. Add the dynamic toast rendering engine to the bottom of main.js
+function showToast(message) {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "toast-container";
+
+        // ─── FORCE INLINE STYLES TO BYPASS ALL CSS CACHING AND GRID OVERRIDES ───
+        toastContainer.style.cssText = `
+            position: fixed !important;
+            top: 24px !important;
+            right: 24px !important;
+            z-index: 999999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            pointer-events: none !important;
+            width: auto !important;
+            height: auto !important;
+        `;
+
+        document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = "toast-notification toast-success";
+
+    // Force a strict fixed width directly on the notification card so it can never squash
+    toast.style.cssText = `
+        width: 340px !important;
+        max-width: calc(100vw - 48px) !important;
+        box-sizing: border-box !important;
+        pointer-events: auto !important;
+    `;
+
+    toast.innerHTML = `
+        <span class="toast-icon">✓</span>
+        <span class="toast-message" style="white-space: normal !important; word-break: break-word !important;">${message}</span>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    // Smoothly strip away element references after animations conclude
+    setTimeout(() => {
+        toast.classList.add("toast-fade-out");
+        toast.addEventListener("animationend", () => toast.remove());
+    }, 4000);
 }

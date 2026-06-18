@@ -1382,3 +1382,94 @@ tbody td.muted { color: var(--text-secondary); font-size: 12px; }
         transform: rotate(360deg);
     }
 }
+/* Toast Notification Floating Boundary Wrap */
+.toast-container {
+    position: fixed !important; /* Forces it completely out of the page layout flow */
+    top: 24px;
+    right: 24px;
+    z-index: 99999 !important; /* Sits on top of modals, sidebars, and navbars */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none; /* Allows clicks to pass through the empty container space */
+    width: auto;
+}
+
+.toast-notification {
+    background: #1e1e24;
+    color: #ffffff;
+    border-left: 4px solid #10b981;
+    padding: 14px 20px;
+    border-radius: 6px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    width: 340px; /* Fixed width prevents horizontal text squashing */
+    max-width: calc(100vw - 48px);
+    pointer-events: auto; /* Re-enables clicks specifically for the alert box */
+    box-sizing: border-box;
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
+    flex-shrink: 0; /* Prevents the checkmark from squishing into an oval */
+}
+
+.toast-message {
+    flex-grow: 1;
+    line-height: 1.4;
+    font-weight: 500;
+    white-space: normal; /* Allows text wrap if your success string is long */
+}
+
+/* Keyframe Transform Sequences */
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+}
+
+.toast-fade-out {
+    animation: toastSlideOut 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+/* Responsive Media Query for Laptops/Tablets/Phones */
+@media (max-width: 480px) {
+    .toast-container {
+        top: 12px;
+        right: 12px;
+        left: 12px; /* Centers it across the top of the mobile screen viewport */
+    }
+    .toast-notification {
+        width: 100%;
+    }
+}
