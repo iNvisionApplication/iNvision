@@ -464,11 +464,9 @@ function loadAvailableAssets(pageNumber) {
                 card.className = "asset-card";
 
                 const imagePath = getAssetImagePath(asset.photoPath);
-<<<<<<< Updated upstream
+
                 const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
-=======
-                const isLoaned = asset.status.toUpperCase() === "LOANED";
->>>>>>> Stashed changes
+
 
                 const actionButton = isLoaned
                     ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
