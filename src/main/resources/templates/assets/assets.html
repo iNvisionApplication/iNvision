@@ -12,6 +12,7 @@
 <section>
 
     <input type="hidden" id="currentUserId" th:value="${currentUserId}"/>
+    <input type="hidden" id="currentUserRole" th:value="${currentUserRole}"/>
 
     <div class="page-header">
         <div>
@@ -19,9 +20,21 @@
             <p class="page-subtitle">Choose an asset and submit a loan request.</p>
         </div>
 
-        <a th:href="@{/loans}" class="btn btn-secondary">
-            Back to My Loans
-        </a>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}">
+                <a th:href="@{/assets/add}" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add New Asset
+                </a>
+            </div>
+
+            <a th:href="@{/loans}" class="btn btn-secondary">
+                Back to My Loans
+            </a>
+        </div>
     </div>
 
     <div class="asset-loan-layout">
@@ -74,7 +87,6 @@
         </aside>
 
     </div>
-
 
     <div id="errorModalBackdrop" class="modal-backdrop">
         <div class="modal">

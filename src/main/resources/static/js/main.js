@@ -5,6 +5,24 @@ let currentLoansPage = 0;
 const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
 
 document.addEventListener("DOMContentLoaded", function () {
+
+   // Bind CSV Template Downloader
+    const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
+    if (downloadTemplateBtn) {
+        downloadTemplateBtn.addEventListener("click", downloadCSVTemplate);
+    }
+
+    // Bind Manual Asset Creation Form
+    const manualAssetForm = document.getElementById("manualAssetForm");
+    if (manualAssetForm) {
+         manualAssetForm.addEventListener("submit", submitManualAsset);
+    }
+
+       // Bind Bulk CSV Import Form
+    const bulkUploadForm = document.getElementById("bulkUploadForm");
+    if (bulkUploadForm) {
+          bulkUploadForm.addEventListener("submit", submitBulkImport);
+    }
     setupDueDateLimit();
 
     if (document.getElementById("loanHistoryBody")) {
@@ -201,6 +219,95 @@ function showErrorModal(title, message) {
     } else {
         alert(`${title}\n\n${message}`);
     }
+}
+
+function submitManualAsset(event) {
+    event.preventDefault();
+
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    // Gather text values to match your backend AssetRequestDTO fields
+    const assetPayload = {
+        title: document.getElementById("title").value,
+        serialNumber: document.getElementById("serialNumber").value,
+        category: document.getElementById("category").value,
+        condition: document.getElementById("condition").value,
+        location: document.getElementById("location").value,
+        cost: Number(document.getElementById("cost").value),
+        path: document.getElementById("path").value,
+
+        // Generates today's date dynamically in YYYY-MM-DD format
+        acquisitionDate: new Date().toISOString().slice(0, 19)
+    };
+
+    fetch("/api/assets", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify(assetPayload)
+    })
+    .then(async response => {
+        if (response.ok) {
+            alert("Asset registered successfully!");
+            window.location.href = "/assets";
+        } else {
+            const errorText = await response.text();
+            alert("Failed to save asset: " + errorText);
+        }
+    })
+    .catch(error => {
+        console.error("Error saving asset:", error);
+        alert("An error occurred while connecting to the server.");
+    });
+}
+
+function submitBulkImport(event) {
+    event.preventDefault();
+
+    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const fileInput = document.getElementById("csvFile");
+    if (!fileInput.files.length) {
+        alert("Please select a valid CSV manifest file first.");
+        return;
+    }
+
+    // Wrap the file inside a multi-part boundary form container
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const executeBulkBtn = document.getElementById("executeBulkBtn");
+    executeBulkBtn.disabled = true;
+    executeBulkBtn.textContent = "Processing Ingestion...";
+
+    fetch("/api/assets/import", {
+        method: "POST",
+        headers: {
+            [csrfHeader]: csrfToken // Send security token, but omit Content-Type entirely!
+        },
+        body: formData
+    })
+    .then(async response => {
+        const message = await response.text();
+        if (response.ok) {
+            alert("Bulk Processing Complete: " + message);
+            window.location.href = "/dashboard";
+        } else {
+            alert("Import Rejected: " + message);
+            executeBulkBtn.disabled = false;
+            executeBulkBtn.textContent = "Process Spreadsheet Manifest";
+        }
+    })
+    .catch(error => {
+        console.error("Error executing bulk upload:", error);
+        alert("A connectivity drop or internal error stopped your bulk manifest import.");
+        executeBulkBtn.disabled = false;
+        executeBulkBtn.textContent = "Process Spreadsheet Manifest";
+    });
 }
 
 function loadAvailableAssets(pageNumber) {
@@ -519,4 +626,51 @@ function removePaginationControls(controlsId) {
     if (controlsContainer) {
         controlsContainer.remove();
     }
+}
+
+function downloadCSVTemplate(event) {
+    event.preventDefault();
+
+    // 1. Define the exact headers your Apache Commons CSV parser expects
+    const headers = [
+        "title",
+        "category",
+        "serial_number",
+        "acquisition_date",
+        "cost",
+        "location",
+        "condition",
+        "status",
+        "photo_path"
+    ];
+
+    // 2. Supply an explicit baseline reference row to guide data entry
+    const sampleRow = [
+        "MacBook Pro 16-inch M4",
+        "AUDIO",
+        "SN-INV778899",
+        "2026-06-18 10:00:00", // Matches your exact backend 'yyyy-MM-dd HH:mm:ss' formatter
+        "45000.00",
+        "AdminOffice",        // Matches your capitalized Java Enum location
+        "GOOD",               // Matches upper-case condition
+        "AVAILABLE",          // Matches upper-case status
+        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8"
+    ];
+
+    // 3. Compile lines and convert into a downloadable raw text blob context
+    const csvContent = [headers.join(","), sampleRow.join(",")].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    // 4. Create a virtual download link element node
+    const temporaryLink = document.createElement("a");
+    temporaryLink.setAttribute("href", url);
+    temporaryLink.setAttribute("download", "invision_asset_import_template.csv");
+    temporaryLink.style.visibility = "hidden";
+
+    // 5. Append, click to trigger download window, and strip away trash nodes
+    document.body.appendChild(temporaryLink);
+    temporaryLink.click();
+    document.body.removeChild(temporaryLink);
+    URL.revokeObjectURL(url); // Clean browser memory allocation signatures
 }
