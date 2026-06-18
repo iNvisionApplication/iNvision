@@ -376,7 +376,7 @@ function loadAvailableAssets(pageNumber) {
                 const card = document.createElement("div");
                 card.className = "asset-card";
 
-                const imagePath = getAssetImagePath(asset.path);
+                const imagePath = getAssetImagePath(asset.photoPath);
                 const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
 
                 const actionButton = isLoaned
