@@ -50,7 +50,10 @@ public class LoanController {
     }
 
     @GetMapping("/status")
-    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(@RequestBody LoanStatus status){
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
+    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(
+            @RequestParam LoanStatus status) {
+
         return ResponseEntity.ok(loanService.getAllLoansByStatus(status));
     }
 

@@ -142,9 +142,16 @@ public class LoanService {
         String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
 
         // FIX 2: Consolidated logic path updates to remove duplicate code blocks fighting each other
+        // fix 3: Fixing the due date reflection from back to front
         if (newStatus == LoanStatus.APPROVED) {
-            int days = loan.getLoanPeriod() != null ? loan.getLoanPeriod().getDays() : 14;
-            loan.setDueDate(LocalDateTime.now().plusDays(days));
+            LocalDateTime approvalDate = LocalDateTime.now();
+
+            int days = loan.getLoanPeriod() != null
+                    ? loan.getLoanPeriod().getDays()
+                    : 14;
+
+            loan.setCheckoutDate(approvalDate);
+            loan.setDueDate(approvalDate.plusDays(days));
             loan.setAssetLoanStatus(AssetLoanStatus.PENDING_COLLECTION);
 
             if (asset != null) {

@@ -1356,31 +1356,185 @@ tbody td.muted { color: var(--text-secondary); font-size: 12px; }
 .page-item:not(.active):not(.disabled) .page-link:hover {
     background-color: #f8f9fa;
     border-color: #b5b5b5;
-.btn.btn-loading {
-    pointer-events: none;
-    opacity: 0.8;
+
+    .btn.btn-loading {
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .btn.btn-loading::after {
+        content: "";
+        width: 14px;
+        height: 14px;
+        margin-left: 8px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        display: inline-block;
+        vertical-align: middle;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+}
+ /* Users page buttons */
+.user-actions{
+    display:flex;
+    gap:10px;
 }
 
-.btn.btn-loading::after {
-    content: "";
-    width: 14px;
-    height: 14px;
-    margin-left: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    display: inline-block;
-    vertical-align: middle;
-    animation: spin 0.8s linear infinite;
+.btn-edit-user{
+    background:#1e3a5f;
+    color:#fff;
+    border:none;
+    padding:8px 16px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.2s;
 }
 
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
+.btn-edit-user:hover{
+    background:#274d7d;
+}
+
+.btn-deactivate-user{
+    background:#22c55e;
+    color:white;
+    border:none;
+    padding:8px 16px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.btn-deactivate-user:hover{
+    background:#16a34a;
+}
+
+.btn-activate-user{
+    background:#ef4444;
+    color:white;
+    border:none;
+    padding:8px 16px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.btn-activate-user:hover{
+    background:#dc2626;
+}
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.hidden{
+    display:none;
+}
+
+.modal-card{
+    width:500px;
+    max-width:90%;
+    background:white;
+    border-radius:16px;
+    padding:24px;
+    box-shadow:0 15px 40px rgba(0,0,0,.15);
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.modal-close{
+    border:none;
+    background:none;
+    font-size:24px;
+    cursor:pointer;
+}
+
+.form-group{
+    margin-bottom:16px;
+}
+
+.form-group input,
+.form-group select{
+    width:100%;
+    padding:10px;
+    border:1px solid #dcdcdc;
+    border-radius:8px;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:20px;
+}
+
+.btn-save-user{
+    background:#1e3a5f;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.btn-cancel{
+    background:#e5e7eb;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+/* improving mobile friendliness */
+
+
+.mobile-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 90;
+    display: none;
+}
+
+.mobile-backdrop.show{
+    display: block;
+}
+
+@media (max-width: 768px){
+
+    /* Sidebar */
+    .sidebar{
+        width: 260px;
+        z-index: 100;
     }
-    to {
-        transform: rotate(360deg);
+
+    /* Page spacing */
+    .content-area{
+        padding: 16px;
     }
+<<<<<<< Updated upstream
 }
 /* Toast Notification Floating Boundary Wrap */
 .toast-container {
@@ -1538,3 +1692,90 @@ tbody td.muted { color: var(--text-secondary); font-size: 12px; }
 .tab-btn:active {
     transform: scale(0.97);
 }
+=======
+
+    .page-header{
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-heading{
+        font-size: 24px;
+    }
+
+    /* Cards */
+    .stats-grid{
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-grid{
+        grid-template-columns: 1fr;
+    }
+
+    /* Tables */
+    .table-card,
+    .table-wrapper{
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    table{
+        min-width: 700px;
+    }
+
+    /* Forms */
+    .form-row{
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions{
+        flex-direction: column;
+    }
+
+    .form-actions .btn{
+        width: 100%;
+    }
+
+    /* User buttons */
+    .user-actions{
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .btn-edit-user,
+    .btn-deactivate-user,
+    .btn-activate-user{
+        width: 100%;
+    }
+
+    /* User modal */
+    .modal-card{
+        width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Asset cards */
+    .asset-grid{
+        grid-template-columns: 1fr;
+    }
+
+    .asset-loan-layout{
+        grid-template-columns: 1fr;
+    }
+
+    .loan-request-panel{
+        position: static;
+        margin-top: 20px;
+    }
+
+    /* Topbar */
+    .topbar{
+        padding: 0 16px;
+    }
+
+    .system-time{
+        display:none;
+    }
+}
+>>>>>>> Stashed changes

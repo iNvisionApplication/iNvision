@@ -1,5 +1,6 @@
 package com.invision.web.Invision.controller.api;
 
+import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.dto.UserUpdateDTO;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.service.UserService;
@@ -39,4 +40,20 @@ public class UsersController {
         userService.deactivateUser(id);
         return ResponseEntity.ok("User deactivated successfully");
     }
+
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> activateUser(@PathVariable Long id) {
+        userService.activateUser(id);
+        return ResponseEntity.ok("User activated successfully");
+    }
+
+    @PostMapping("/staff")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> createStaffUser(
+            @Valid @RequestBody UserRegistrationDTO dto
+    ) {
+        return ResponseEntity.ok(userService.createStaffUser(dto));
+    }
+
 }
