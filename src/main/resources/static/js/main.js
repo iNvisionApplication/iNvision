@@ -54,6 +54,38 @@ document.addEventListener("DOMContentLoaded", function () {
         loadUsers();
     }
 
+    // Mobile Sidebar Toggle
+    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const sidebar = document.getElementById("sidebar");
+    const mobileBackdrop = document.getElementById("mobileBackdrop");
+
+    if (mobileMenuBtn && sidebar && mobileBackdrop) {
+
+        mobileMenuBtn.addEventListener("click", function () {
+
+            sidebar.classList.toggle("open");
+            mobileBackdrop.classList.toggle("show");
+
+            const isOpen = sidebar.classList.contains("open");
+
+            mobileMenuBtn.setAttribute(
+                "aria-expanded",
+                isOpen ? "true" : "false"
+            );
+        });
+
+        mobileBackdrop.addEventListener("click", function () {
+
+            sidebar.classList.remove("open");
+            mobileBackdrop.classList.remove("show");
+
+            mobileMenuBtn.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        });
+    }
+
     const loanRequestForm = document.getElementById("loanRequestForm");
 
     if (loanRequestForm) {
@@ -91,6 +123,8 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     currentLoansPage = pageNumber;
     const userId = getCurrentUserId();
     const role = getCurrentUserRole();
+    const params = new URLSearchParams(window.location.search);
+    const statusFilter = params.get("status");
     const tableBody = document.getElementById("loanHistoryBody");
     const tableWrapper = tableBody?.closest('.table-wrapper');
 
@@ -98,9 +132,17 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
 
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
-        url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+
+        if (statusFilter === "PENDING") {
+            url = `/api/loans/status?status=PENDING`;
+        } else {
+            url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+        }
+
     } else {
+
         if (!userId) return;
+
         url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
     }
 
@@ -128,14 +170,27 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             loans.forEach(loan => {
                 const row = document.createElement("tr");
 
+                const canApprove =
+                    (role === "ADMIN" || role === "MANAGER") &&
+                    loan.status === "PENDING";
+
                 row.innerHTML = `
                     <td>${loan.loanId || "N/A"}</td>
                     <td>${loan.assetTitle || "N/A"}</td>
                     <td>${loan.description || "N/A"}</td>
                     <td>${formatDateTime(loan.requestDate)}</td>
-                    <td>${loan.loanPeriod || formatDateTime(loan.dueDate) || "N/A"}</td>
+                    <td>${formatDateTime(loan.dueDate)}</td>
                     <td>${getStatusBadge(loan.status)}</td>
-                `;
+                    <td>
+                     ${
+                    canApprove
+                        ? `<button class="btn-primary" onclick="approveLoan(${loan.loanId})">
+                       Approve
+                   </button>`
+                        : ""
+                    }
+                    </td>
+`;
 
                 tableBody.appendChild(row);
             });
@@ -147,6 +202,38 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             tableBody.innerHTML = `<tr><td colspan="6">Failed to load loans.</td></tr>`;
             showErrorModal("System Error", "Failed to retrieve loan history files from the server. Please try again later.");
         });
+}
+
+async function approveLoan(loanId) {
+
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    try {
+
+        const response = await fetch(`/api/loans/${loanId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                [header]: token
+            },
+            body: JSON.stringify({
+                loanStatus: "APPROVED"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        loadUserLoans(currentLoansPage);
+
+    } catch (error) {
+        showErrorModal(
+            "Approval Failed",
+            "Unable to approve this loan request."
+        );
+    }
 }
 
 function submitLoanRequest(event) {
@@ -376,8 +463,12 @@ function loadAvailableAssets(pageNumber) {
                 const card = document.createElement("div");
                 card.className = "asset-card";
 
-                const imagePath = getAssetImagePath(asset.path);
+                const imagePath = getAssetImagePath(asset.photoPath);
+<<<<<<< Updated upstream
                 const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
+=======
+                const isLoaned = asset.status.toUpperCase() === "LOANED";
+>>>>>>> Stashed changes
 
                 const actionButton = isLoaned
                     ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
@@ -478,9 +569,21 @@ async function loadUsers() {
                     <td>${user.email || "N/A"}</td>
                     <td>${user.department || "-"}</td>
                     <td>${user.role || "N/A"}</td>
-                    <td>
-                        <button type="button" onclick="editUser(${user.userId})">Edit</button>
-                        <button type="button" onclick="deleteUser(${user.userId})">Deactivate</button>
+                    <td class="user-actions">
+                        <button
+                         type="button"
+                         class="btn-edit-user"
+                         onclick='openEditUserModal(${JSON.stringify(user)})'>
+                         Edit
+                         </button>
+
+                         <button
+                         type="button"
+                         class="${user.active ? 'btn-deactivate-user' : 'btn-activate-user'}"
+                         onclick="toggleUserStatus(${user.userId}, ${user.active})">
+
+                         ${user.active ? 'Deactivate' : 'Activate'}
+                         </button>
                     </td>
                 </tr>
             `;
@@ -493,16 +596,17 @@ async function loadUsers() {
     }
 }
 
-async function deleteUser(userId) {
-    const confirmDelete = confirm("Are you sure you want to deactivate this user?");
-    if (!confirmDelete) return;
+async function toggleUserStatus(userId, isActive) {
+    const action = isActive ? "deactivate" : "activate";
+
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
 
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     try {
-        const response = await fetch(`/api/users/${userId}`, {
-            method: "DELETE",
+        const response = await fetch(`/api/users/${userId}/${action}`, {
+            method: "PATCH",
             headers: {
                 [header]: token
             }
@@ -515,13 +619,132 @@ async function deleteUser(userId) {
         loadUsers();
 
     } catch (error) {
-        console.error("Error deleting user:", error);
-        showErrorModal("Action Aborted", "Failed to deactivate the user account due to a server-side operational error.");
+        console.error(error);
+        showErrorModal("Action Failed", `Failed to ${action} user.`);
     }
 }
 
-function editUser(userId) {
-    showErrorModal("Preview Feature", "The user configuration adjustment view still needs to be built out for user ID: " + userId);
+function openEditUserModal(user) {
+
+    document.getElementById("editUserId").value = user.userId;
+    document.getElementById("editName").value = user.name || "";
+    document.getElementById("editEmail").value = user.email || "";
+    document.getElementById("editDepartment").value = user.department || "";
+    document.getElementById("editRole").value = user.role || "";
+
+    document.getElementById("editUserModal")
+        .classList.remove("hidden");
+}
+
+function closeEditUserModal() {
+    document.getElementById("editUserModal")
+        .classList.add("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const editForm = document.getElementById("editUserForm");
+    const addAdminForm = document.getElementById("addAdminForm");
+
+    if (editForm) {
+        editForm.addEventListener("submit", saveUserChanges);
+    }
+    if (addAdminForm) {
+        addAdminForm.addEventListener("submit", createAdminUser);
+    }
+});
+
+function openAddAdminModal() {
+    document.getElementById("addAdminModal").classList.remove("hidden");
+}
+
+function closeAddAdminModal() {
+    document.getElementById("addAdminModal").classList.add("hidden");
+    document.getElementById("addAdminForm").reset();
+}
+
+async function createAdminUser(event) {
+    event.preventDefault();
+
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const payload = {
+        name: document.getElementById("adminName").value,
+        email: document.getElementById("adminEmail").value,
+        department: document.getElementById("adminDepartment").value,
+        password: document.getElementById("adminPassword").value,
+        role: "ADMIN"
+    };
+
+    try {
+        const response = await fetch("/api/users/staff", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                [header]: token
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server returned status ${response.status}`);
+        }
+
+        closeAddAdminModal();
+        loadUsers();
+
+        showErrorModal(
+            "Admin Created",
+            "New admin created successfully. They must reset their password on first login."
+        );
+
+    } catch (error) {
+        console.error("Error creating admin:", error);
+        showErrorModal("Creation Failed", "Failed to create new admin user.");
+    }
+}
+
+async function saveUserChanges(event) {
+
+    event.preventDefault();
+
+    const userId = document.getElementById("editUserId").value;
+
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    const payload = {
+        name: document.getElementById("editName").value,
+        email: document.getElementById("editEmail").value,
+        department: document.getElementById("editDepartment").value,
+        role: document.getElementById("editRole").value
+    };
+
+    try {
+
+        const response = await fetch(`/api/users/${userId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                [header]: token
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        closeEditUserModal();
+        loadUsers();
+
+    } catch (error) {
+        showErrorModal(
+            "Update Failed",
+            "Unable to update user information."
+        );
+    }
 }
 
 // ================= HELPERS =================

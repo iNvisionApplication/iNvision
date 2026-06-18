@@ -39,8 +39,8 @@
                 <div class="stat-sub">Require immediate action</div>
             </div>
         </a>
-        <a th:href="@{/loans/pending}" class="stat-link">
-            <div class="stat-card green">
+        <a th:href="@{/loans(status='PENDING')}" class="stat-card-link">
+            <div class="stat-card">
                 <div class="stat-label">Pending Requests</div>
                 <div class="stat-value" th:text="${pendingRequests}">0</div>
                 <div class="stat-sub">Awaiting approval</div>

@@ -34,8 +34,8 @@ public class LoanMapper {
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
 
 
-        return new LoanResponseDTO(String.valueOf(loan.getLoanId()),loan.getAsset().getTitle(),loan.getUser().getName(),
-                loan.getRequestDate(),loan.getStatus(),loan.getLoanPeriod(),loan.getAssetLoanStatus());
+        return new LoanResponseDTO(String.valueOf(loan.getLoanId()), loan.getAsset().getTitle(), loan.getUser().getName(),
+                loan.getRequestDate(), loan.getStatus(), loan.getDueDate(), loan.getAssetLoanStatus());
     }
 
     public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO, Department department, Long loanId){

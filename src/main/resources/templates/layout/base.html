@@ -133,13 +133,22 @@
     </div>
 </nav>
 
+<!-- Mobile Sidebar Backdrop -->
+<div class="mobile-backdrop" id="mobileBackdrop"></div>
+
 <!-- Main Content -->
 <main class="main-content" id="mainContent">
     <!-- Top Bar -->
     <header class="topbar">
         <div class="topbar-left">
-            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
-                <span></span><span></span><span></span>
+            <button class="mobile-menu-btn"
+                    id="mobileMenuBtn"
+                    type="button"
+                    aria-label="Open menu"
+                    aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
             </button>
             <h1 class="page-title" th:replace="${title}">Page</h1>
         </div>
