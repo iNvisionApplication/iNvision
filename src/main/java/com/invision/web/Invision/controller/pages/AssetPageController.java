@@ -1,6 +1,7 @@
 package com.invision.web.Invision.controller.pages;
 
 import com.invision.web.Invision.config.CustomUserDetails;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
@@ -50,6 +51,17 @@ public class AssetPageController {
         model.addAttribute("currentUri", "/assets");
 
         return "assets/edit-asset";
+    }
+
+    @GetMapping("/reports")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    public String reportsDashboardPage(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Model model) {
+        model.addAttribute("currentUserId", userDetails.getId());
+        model.addAttribute("currentUserRole", userDetails.getUser().getRole().name());
+        model.addAttribute("currentUri", "/reports");
+        return "reports/reports";
     }
 
 }
