@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Enterprise Analytics & Reports — iNVision</title>
+</head>
+<body>
+<section>
+
+    <div class="page-header">
+        <div>
+            <h2 class="page-heading">System Reporting Engine</h2>
+            <p class="page-subtitle">Compile inventory distributions, track historical usage patterns, and monitor asset lifecycle health.</p>
+        </div>
+    </div>
+
+    <div class="report-tabs" style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <button class="btn tab-btn active" onclick="switchReportTab('inventory')">📊 Asset Inventory</button>
+        <button class="btn tab-btn" onclick="switchReportTab('loans')">📜 Loan History</button>
+        <button class="btn tab-btn" onclick="switchReportTab('overdue')">⚠️ Overdue Assets</button>
+    </div>
+
+    <div id="inventoryTabPanel" class="tab-panel">
+        <div class="filter-card" style="background: var(--bg-surface); padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                <input type="text" id="invTitle" class="form-control" placeholder="Search title..." />
+                <select id="invCategory" class="form-control">
+                    <option value="">All Categories</option>
+                    <option value="LAPTOP">Laptops</option>
+                    <option value="AUDIO">Audio Hardware</option>
+                    <option value="CAMERA">Camera Gear</option>
+                </select>
+                <select id="invStatus" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="AVAILABLE">Available</option>
+                    <option value="LOANED">Loaned Out</option>
+                    <option value="RETIRED">Retired</option>
+                </select>
+                <select id="invLocation" class="form-control">
+                    <option value="">All Locations</option>
+                    <option value="AdminOffice">Admin Office</option>
+                    <option value="SecureVault">Secure Vault</option>
+                    <option value="DockingStation">Docking Station</option>
+                </select>
+            </div>
+            <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-primary" onclick="generateInventoryReport()">Generate Dataset</button>
+                <button class="btn btn-secondary" onclick="exportInventoryCSV()">📥 Export Filtered CSV</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table" id="inventoryTable">
+                <thead>
+                <tr>
+                    <th>Asset ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Serial Number</th>
+                    <th>Location</th>
+                    <th>Condition</th>
+                    <th>Cost</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody><tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Configure criteria and execute dataset generator.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="loansTabPanel" class="tab-panel" style="display: none;">
+        <div class="filter-card" style="background: var(--bg-surface); padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <input type="text" id="loanAssetTitle" class="form-control" placeholder="Search by Asset Title (e.g. MacBook)..." />
+                <input type="text" id="loanBorrowerEmail" class="form-control" placeholder="Search by Borrower Email..." />
+
+                <select id="loanDepartment" class="form-control">
+                    <option value="">All Departments</option>
+                    <option value="IT">IT Infrastructure</option>
+                    <option value="SALES">SALES & Accounting</option>
+                    <option value="MARKETING">Marketing & Creative</option>
+                </select>
+
+                <select id="loanStatus" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="PENDING">Pending Approval</option>
+                    <option value="APPROVED">Approved / Active</option>
+                    <option value="RETURNED">Returned Records</option>
+                    <option value="REJECTED">Rejected Requests</option>
+                </select>
+            </div>
+            <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="loanSubmitBtn" class="btn btn-primary" onclick="generateLoanReport()">Compile History</button>
+                <button class="btn btn-secondary" onclick="exportLoanCSV()">📥 Export Filtered CSV</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table" id="loanTable">
+                <thead>
+                <tr>
+                    <th>Loan ID</th>
+                    <th>Asset Title</th>
+                    <th>Borrower Email</th>
+                    <th>Department</th>
+                    <th>Request Date</th>
+                    <th>Due Date</th>
+                    <th>Return Date</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-secondary);">
+                        Configure criteria and execute dataset generator.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="overdueTabPanel" class="tab-panel" style="display: none;">
+        <div class="filter-card" style="background: var(--bg-surface); padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: var(--text-secondary);">Gathers all live assignments where current timestamp bounds exceed expected contract provisions.</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="generateOverdueReport()">Scan Violations</button>
+                <button class="btn btn-secondary" onclick="exportOverdueCSV()">📥 Export Overdue CSV</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table" id="overdueTable">
+                <thead>
+                <tr>
+                    <th>Loan ID</th>
+                    <th>Asset Title</th>
+                    <th>Borrower Details</th>
+                    <th>Checkout Date</th>
+                    <th>Expected Due Date</th>
+                    <th>Elapsed Days Overdue</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody><tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Execute scan to detect system lifecycle violations.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script th:src="@{/js/reports.js}"></script>
+
+</section>
+</body>
+</html>

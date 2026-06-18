@@ -1473,3 +1473,68 @@ tbody td.muted { color: var(--text-secondary); font-size: 12px; }
         width: 100%;
     }
 }
+/* Inline Button Spinner */
+.btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff; /* Match text color */
+    animation: buttonSpin 0.6s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes buttonSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Disabled button utility look */
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+/* ─── BASE TAB BUTTON STYLING ─── */
+.tab-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0; /* Rounded top corners only */
+
+    /* ⚡ The secret to smooth animations: transitions */
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ─── HOVER ANIMATION STATE ─── */
+.tab-btn:hover:not(.active) {
+    color: #ffffff; /* Text brightens to pure white on dark themes */
+    background: rgba(255, 255, 255, 0.05); /* Soft background glow */
+    transform: translateY(-2px); /* Subtle lift effect */
+    border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── ACTIVE COMPONENT STATE ─── */
+.tab-btn.active {
+    color: #10b981 !important; /* Premium Emerald Accent to match your brand */
+    background: rgba(16, 185, 129, 0.08); /* Transparent emerald tint */
+    border-bottom: 2px solid #10b981; /* Solid colored tracking anchor indicator */
+    font-weight: 600;
+    transform: translateY(0);
+}
+
+/* Ensure the button click active-press effect feels snappy */
+.tab-btn:active {
+    transform: scale(0.97);
+}
