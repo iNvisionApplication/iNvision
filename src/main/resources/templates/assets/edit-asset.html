@@ -40,7 +40,7 @@
                         <option value="">Select category</option>
                         <option value="LAPTOP">Electronics / Laptops</option>
                         <option value="AUDIO">Audio Hardware</option>
-                        <option value="CAMERA">Office Furniture & Gear</option>
+                        <option value="CAMERA">Office Furniture &amp; Gear</option>
                     </select>
                 </div>
             </div>
@@ -80,12 +80,56 @@
                 <input class="form-control" type="url" id="path" />
             </div>
 
-            <div class="form-actions" style="margin-top: 24px; padding-top: 16px;">
+            <div class="form-actions" style="margin-top: 24px; padding-top: 16px; display: flex; gap: 10px; align-items: center;">
                 <button type="submit" class="btn btn-primary">Commit Changes</button>
-                <a th:href="@{/assets}" class="btn btn-secondary">Discard Modifications</a>
+
+                <button type="button" class="btn btn-danger" onclick="triggerAssetRetirement()">Retire Asset</button>
+
+                <a th:href="@{/assets}" class="btn btn-secondary" style="margin-left: auto;">Discard Modifications</a>
             </div>
         </form>
     </div>
+
+    <script>
+        function triggerAssetRetirement() {
+            const assetId = document.getElementById("targetAssetId").value;
+            if (!assetId) {
+                alert("Contextual Failure: No baseline asset ID found to retire.");
+                return;
+            }
+
+            // Fire an explicit modal confirmation block to shield against accidental clicks
+            if (!confirm("Are you absolute sure you want to retire this hardware inventory asset? This action will permanently lock it out from new borrower loan requests.")) {
+                return;
+            }
+
+            // Extract anti-forgery keys from Thymeleaf head templates
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+            fetch(`/api/assets/retire/${assetId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(async response => {
+                const textMessage = await response.text();
+                if (response.ok) {
+                    alert("System Record Confirmed: " + textMessage);
+                    // Redirect back to main dashboard inventory grid panel with a success notification state
+                    window.location.href = `/assets?success=true&msg=${encodeURIComponent(textMessage)}`;
+                } else {
+                    alert("Retirement Refused: " + textMessage);
+                }
+            })
+            .catch(error => {
+                console.error("Pipeline failure executing transaction lifecycle update:", error);
+                alert("System Interruption: A connectivity error blocked transmission of lifecycle metrics.");
+            });
+        }
+    </script>
 
 </section>
 </body>

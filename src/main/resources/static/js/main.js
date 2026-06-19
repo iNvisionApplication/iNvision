@@ -167,31 +167,41 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                         return;
                     }
 
+            // Replace the row rendering block inside your loop inside loadUserLoans(pageNumber)
             loans.forEach(loan => {
                 const row = document.createElement("tr");
+                let actionsHtml = "";
 
-                const canApprove =
-                    (role === "ADMIN" || role === "MANAGER") &&
-                    loan.status === "PENDING";
+                if (role === "ADMIN" || role === "MANAGER") {
+                    if (loan.status === "PENDING") {
+                        actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>`;
+                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                        actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
+                    } else {
+                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
+                    }
+                } else {
+                    // BORROWER SELECTIONS
+                    if (loan.status === "APPROVED" && loan.assetLoanStatus === "PENDING_COLLECTION") {
+                        actionsHtml = `<button class="btn btn-sm btn-steel" onclick="executeLoanAction(${loan.loanId}, 'collect')">Confirm Collection</button>`;
+                    } else if (loan.status === "APPROVED" && loan.assetLoanStatus === "COLLECTED") {
+                        actionsHtml = `<button class="btn btn-sm btn-danger" onclick="executeLoanAction(${loan.loanId}, 'return')">Return Asset</button>`;
+                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                        actionsHtml = `<em style="font-size:12px; color:var(--amber);">Awaiting Manager Sign-off</em>`;
+                    } else {
+                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">No Action</span>`;
+                    }
+                }
 
                 row.innerHTML = `
-                    <td>${loan.loanId || "N/A"}</td>
+                    <td><strong>#${loan.loanId || "N/A"}</strong></td>
                     <td>${loan.assetTitle || "N/A"}</td>
                     <td>${loan.description || "N/A"}</td>
                     <td>${formatDateTime(loan.requestDate)}</td>
                     <td>${formatDateTime(loan.dueDate)}</td>
                     <td>${getStatusBadge(loan.status)}</td>
-                    <td>
-                     ${
-                    canApprove
-                        ? `<button class="btn-primary" onclick="approveLoan(${loan.loanId})">
-                       Approve
-                   </button>`
-                        : ""
-                    }
-                    </td>
-`;
-
+                    <td class="table-actions">${actionsHtml}</td>
+                `;
                 tableBody.appendChild(row);
             });
 
@@ -307,6 +317,27 @@ function submitLoanRequest(event) {
                 );
             }
         });
+}
+
+function executeLoanAction(loanId, actionEndpoint) {
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    fetch(`/api/loans/${loanId}/${actionEndpoint}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            [header]: token
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Operational transformation state rejected by server rules.");
+        loadUserLoans(currentLoansPage); // Refresh the active table frame dynamically
+    })
+    .catch(error => {
+        console.error("Workflow transmission failure:", error);
+        showErrorModal("Action Aborted", "Could not complete update validation sequence.");
+    });
 }
 
 // ================= ASSETS =================

@@ -3,6 +3,13 @@ let activeInventoryData = [];
 let activeLoanData = [];
 let activeOverdueData = [];
 
+// Automatically load the first tab's data array on script execution mount
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("inventoryTable")) {
+        generateInventoryReport();
+    }
+});
+
 function switchReportTab(targetTab) {
     document.querySelectorAll('.tab-panel').forEach(panel => panel.style.display = 'none');
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -82,7 +89,7 @@ function generateLoanReport() {
 
     // 2. Trigger loading loop state mutations
     submitBtn.disabled = true;
-    submitBtn.innerHTML = `<span class="btn-spinner"></span> Compiling...`;
+    submitBtn.innerHTML = `<span class="btn-spinner"></span> Loading loans...`;
 
     fetch(queryUrl)
         .then(res => res.json())
@@ -161,7 +168,7 @@ function generateOverdueReport() {
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>#${loan.loanId}</td>
-                    <td><span style="color:#ef4444; font-weight:500;">⚠️ ${loan.assetTitle}</span></td>
+                    <td><span style="color:#ef4444; font-weight:500;">${loan.assetTitle}</span></td>
                     <td>${loan.userEmail}</td>
                     <td>${formatTimestamp(loan.checkoutDate)}</td>
                     <td>${formatTimestamp(loan.dueDate)}</td>
@@ -210,4 +217,82 @@ function streamCsvBlob(filenamePrefix, headers, rows) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+// ─────────────────────────────────────────────────────────────────────────
+// SECURITY AUDIT TRAIL EXTRACTION ENGINE
+// ─────────────────────────────────────────────────────────────────────────
+function triggerAuditTrailExtraction() {
+    const extractBtn = document.getElementById("auditExtractBtn");
+    const entityType = document.getElementById("auditFilterEntityType").value;
+    const originalText = extractBtn.innerHTML;
+
+    // Capture security validation metadata from Thymeleaf layout boundaries
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    // Lock interaction and trigger button loading state
+    extractBtn.disabled = true;
+    extractBtn.innerHTML = `<span class="btn-spinner"></span> Extracting Matrix...`;
+
+    // Direct path targeting your new transactional API endpoint
+    const queryUrl = `/api/audit-logs/extract?entityType=${entityType}`;
+
+    fetch(queryUrl, {
+        method: "GET",
+        headers: {
+            [header]: token // Standard security verification handshake
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 403) throw new Error("Security Violation: Access Denied.");
+            throw new Error("Internal server fault during log generation.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.length === 0) {
+            alert("No audit logs found matching the selected transaction module.");
+            return;
+        }
+
+        // Define clean, business-friendly columns for the spreadsheet
+        const headers = ["Log ID", "Operator Email", "Module Affected", "Target Record ID", "Action Executed", "Details / Changes", "Timestamp Metric"];
+
+        // Map the server DTO records into compliant CSV string lines
+        const rows = data.map(log => [
+            log.logId,
+            log.operatorEmail,
+            log.entityType,
+            log.entityId || "SYSTEM",
+            log.action,
+            `"${(log.details || "").replace(/"/g, '""')}"`, // Safely sanitizes quotes/commas inside descriptions
+            formatTimestamp(log.timestamp)
+        ]);
+
+        // Compile and stream the text data directly to the user's browser storage
+        const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const currentDayMarker = new Date().toISOString().slice(0, 10);
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", url);
+        downloadAnchor.setAttribute("download", `invision_audit_trail_${currentDayMarker}.csv`);
+        downloadAnchor.style.visibility = "hidden";
+
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        document.body.removeChild(downloadAnchor);
+        URL.revokeObjectURL(url); // Free up browser allocation resources immediately
+    })
+    .catch(error => {
+        console.error("Audit extraction breakdown:", error);
+        alert("Extraction Refused: " + error.message);
+    })
+    .finally(() => {
+        // Unlock button element and restore state layout natively
+        extractBtn.disabled = false;
+        extractBtn.innerHTML = originalText;
+    });
 }

@@ -112,4 +112,22 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getUserLoans(userId, page, size));
     }
 
+    @PutMapping("/{loanId}/collect")
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    public ResponseEntity<LoanResponseDTO> collectLoan(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.loanActionCollect(loanId));
+    }
+
+    @PutMapping("/{loanId}/return")
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    public ResponseEntity<LoanResponseDTO> initiateReturn(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.loanActionReturn(loanId));
+    }
+
+    @PutMapping("/{loanId}/confirm-return")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    public ResponseEntity<LoanResponseDTO> confirmReturn(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.confirmLoanReturn(loanId));
+    }
+
 }
