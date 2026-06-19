@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
     <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -17,9 +18,10 @@
     </div>
 
     <div class="report-tabs" style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-        <button class="btn tab-btn active" onclick="switchReportTab('inventory')"> Asset Inventory</button>
-        <button class="btn tab-btn" onclick="switchReportTab('loans')"> Loan History</button>
-        <button class="btn tab-btn" onclick="switchReportTab('overdue')"> Overdue Assets</button>
+        <button class="btn tab-btn active" onclick="switchReportTab('inventory'); generateInventoryReport();">Asset Inventory</button>
+        <button class="btn tab-btn" onclick="switchReportTab('loans'); generateLoanReport();">Loan History</button>
+        <button class="btn tab-btn" onclick="switchReportTab('overdue'); generateOverdueReport();">Overdue Assets</button>
+        <button sec:authorize="hasRole('ROLE_ADMIN')" class="btn tab-btn" onclick="switchReportTab('audit')">Audit Log Report</button>
     </div>
 
     <div id="inventoryTabPanel" class="tab-panel">
@@ -28,7 +30,6 @@
                 <input type="text" id="invTitle" class="form-control" placeholder="Search title..." />
                 <select id="invCategory" class="form-control">
                     <option value="">All Categories</option>
-                    <option value="LAPTOP">Laptops</option>
                     <option value="AUDIO">Audio Hardware</option>
                     <option value="CAMERA">Camera Gear</option>
                 </select>
@@ -46,7 +47,7 @@
                 </select>
             </div>
             <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn btn-primary" onclick="generateInventoryReport()">Generate Dataset</button>
+                <button class="btn btn-primary" onclick="generateInventoryReport()">Filter</button>
                 <button class="btn btn-secondary" onclick="exportInventoryCSV()"> Export Filtered CSV</button>
             </div>
         </div>
@@ -78,8 +79,8 @@
                 <select id="loanDepartment" class="form-control">
                     <option value="">All Departments</option>
                     <option value="IT">IT Infrastructure</option>
-                    <option value="SALES">SALES & Accounting</option>
-                    <option value="MARKETING">Marketing & Creative</option>
+                    <option value="SALES">SALES &amp; Accounting</option>
+                    <option value="MARKETING">Marketing &amp; Creative</option>
                 </select>
 
                 <select id="loanStatus" class="form-control">
@@ -91,8 +92,8 @@
                 </select>
             </div>
             <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="loanSubmitBtn" class="btn btn-primary" onclick="generateLoanReport()">Compile History</button>
-                <button class="btn btn-secondary" onclick="exportLoanCSV()">📥 Export Filtered CSV</button>
+                <button id="loanSubmitBtn" class="btn btn-primary" onclick="generateLoanReport()">Filter</button>
+                <button class="btn btn-secondary" onclick="exportLoanCSV()">Export Filtered CSV</button>
             </div>
         </div>
 
@@ -125,8 +126,7 @@
         <div class="filter-card" style="background: var(--bg-surface); padding: 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 13px; color: var(--text-secondary);">Gathers all live assignments where current timestamp bounds exceed expected contract provisions.</span>
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="generateOverdueReport()">Scan Violations</button>
-                <button class="btn btn-secondary" onclick="exportOverdueCSV()">📥 Export Overdue CSV</button>
+                <button class="btn btn-secondary" onclick="exportOverdueCSV()"> Export Overdue CSV</button>
             </div>
         </div>
         <div class="table-responsive">
@@ -142,8 +142,30 @@
                     <th>Status</th>
                 </tr>
                 </thead>
-                <tbody><tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Execute scan to detect system lifecycle violations.</td></tr></tbody>
+                <tbody><tr><td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading overdue records...</td></tr></tbody>
             </table>
+        </div>
+    </div>
+
+    <div id="auditTabPanel" class="tab-panel" sec:authorize="hasRole('ROLE_ADMIN')" style="display: none;">
+        <div class="filter-card" style="background: var(--bg-surface); padding: 24px; border-radius: 8px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 4px;">Extract Infrastructure Mutation Logs</h3>
+                <p style="font-size: 13px; color: var(--text-secondary);">Isolate structural audit data blocks for tracking administrative actions and system events.</p>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                <select id="auditFilterEntityType" class="form-control" style="max-width: 240px;">
+                    <option value="">All Transaction Modules</option>
+                    <option value="ASSET">Assets Architecture</option>
+                    <option value="LOAN">Loans &amp; Fulfillment</option>
+                    <option value="USER">User Identities</option>
+                </select>
+
+                <button id="auditExtractBtn" type="button" class="btn btn-primary" onclick="triggerAuditTrailExtraction()">
+                    Extract &amp; Download Audit CSV
+                </button>
+            </div>
         </div>
     </div>
 

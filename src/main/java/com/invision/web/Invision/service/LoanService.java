@@ -337,4 +337,28 @@ public class LoanService {
         return loans.map(loanMapper::loanToLoanResponseDTO);
     }
 
+    // Add this endpoint method inside LoanService.java
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
+    @Transactional
+    public LoanResponseDTO confirmLoanReturn(Long loanId) {
+        User manager = getAuthenticatedUser();
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan record not found"));
+
+        loan.setStatus(LoanStatus.RETURNED);
+        loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
+        loan.setReturnDate(LocalDateTime.now());
+
+        Asset asset = loan.getAsset();
+        if (asset != null) {
+            asset.setStatus(AssetStatus.AVAILABLE);
+            assetRepository.save(asset);
+        }
+
+        String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
+        auditLogService.logCheckIn(manager.getUserId(), loanId, assetInfo);
+
+        return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
+    }
+
 }
