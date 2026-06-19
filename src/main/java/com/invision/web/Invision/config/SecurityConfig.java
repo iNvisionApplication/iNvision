@@ -28,28 +28,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. CSRF PROTECTION FULLY ENABLED ENFORCEMENT
-                // No more ignoring matches for business APIs. Every state-mutating request
-                // (POST, PUT, DELETE) now strictly requires a valid CSRF token.
-                .csrf(csrf -> csrf.configure(http))
-
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/api/assets/**",
+                                "/api/loans/**",
+                                "/api/users/**",
+                                "/users/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/forgot-password/**"
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
                         // Public Assets & Non-authenticated view layers
                         .requestMatchers(
-                                "/","/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                "/error", "/error/**",
                                 "/login", "/register",
                                 "/forgot-password/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
-
-                        // Strict Granular User Management Endpoint Lockdown
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/users/**").hasAnyRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAnyRole("ADMIN")
-
-                        // Core Resource Domain Rules
-                        .requestMatchers("/api/assets/**", "/api/loans/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers("/api/assets/**", "/api/loans/**")
+                        .authenticated()
 
                         .anyRequest().authenticated()
                 )
@@ -73,8 +79,12 @@ public class SecurityConfig {
                         .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
-                        .sessionRegistry(sessionRegistry()) // 2. Linked Registry to support admin boots
-                );
+                ).exceptionHandling(ex -> ex
+                .accessDeniedHandler((request, response, exception) -> {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                })
+        );
+
 
         return http.build();
     }

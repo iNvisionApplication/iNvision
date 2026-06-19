@@ -9,21 +9,28 @@ import com.invision.web.Invision.exception.loan.InvalidLoanStatusChangeException
 import com.invision.web.Invision.exception.user.EmailAlreadyExistsException;
 import com.invision.web.Invision.exception.user.PasswordMismatchException;
 import com.invision.web.Invision.exception.user.UserNotFoundException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.ui.Model;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -62,15 +69,6 @@ public class GlobalExceptionHandler {
         ));
     }
 
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAuthorizationDenied(
-            AuthorizationDeniedException ex, WebRequest request) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponseDTO(403, "FORBIDDEN",
-                        "You do not have permission to perform this action",
-                        request.getDescription(false),
-                        LocalDateTime.now()));
-    }
 
     //Asset Errors
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -110,7 +108,6 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         ));
     }
-
 
 
 
@@ -189,18 +186,65 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public Object handleAccessDenied(AccessDeniedException ex,
+                                     HttpServletRequest request) {
+        if (isApiRequest(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
+                            "Access denied",
+                            request.getRequestURI(),
+                            LocalDateTime.now()));
+        }
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+        return new ModelAndView("forward:/error");
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public Object handleAuthorizationDenied(AuthorizationDeniedException ex,
+                                            HttpServletRequest request) {
+        if (isApiRequest(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
+                            "You do not have permission to perform this action",
+                            request.getRequestURI(),
+                            LocalDateTime.now()));
+        }
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+        return new ModelAndView("forward:/error");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public Object handleNoResource(NoResourceFoundException ex,
+                                   HttpServletRequest request) {
+        if (isApiRequest(request)) {
+            return ResponseEntity.notFound().build();
+        }
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+        return new ModelAndView("forward:/error");
+    }
+
+
+
+    // helper method
+    private boolean isApiRequest(HttpServletRequest request) {
+        String accept = request.getHeader("Accept");
+        String uri = request.getRequestURI();
+        return (accept != null && accept.contains("application/json"))
+                || uri.startsWith("/api/");
+    }
     //Generic Handler
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGeneralException(
-            Exception ex, WebRequest request) {
-
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponseDTO(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_SERVER_ERROR",
-                "An unexpected error occurred: " + ex.getMessage(),
-                request.getDescription(false),
-                LocalDateTime.now()
-        ));
+    public Object handleGeneral(Exception ex, HttpServletRequest request,
+                                WebRequest webRequest) {
+        if (isApiRequest(request)) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponseDTO(500, "INTERNAL_SERVER_ERROR",
+                            "An unexpected error occurred: " + ex.getMessage(),
+                            webRequest.getDescription(false),
+                            LocalDateTime.now()));
+        }
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+        return new ModelAndView("forward:/error");
     }
 }
