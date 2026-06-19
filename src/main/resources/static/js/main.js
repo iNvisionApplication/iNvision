@@ -505,8 +505,15 @@ function loadAvailableAssets(pageNumber) {
 
                 container.appendChild(card);
             });
+            //fix pagination placement for mobile
 
-            buildPaginationControls("assetsPaginationControls", container, totalPages, currentPage, loadAvailableAssets);
+            const loanPanel = document.getElementById("loanRequestPanel");
+
+            if (loanPanel) {
+                buildPaginationControls("assetsPaginationControls", loanPanel, totalPages, currentPage, loadAvailableAssets);
+            } else {
+                buildPaginationControls("assetsPaginationControls", container, totalPages, currentPage, loadAvailableAssets);
+            }
         })
         .catch(error => {
             console.error("Error loading assets:", error);
