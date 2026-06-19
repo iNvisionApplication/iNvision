@@ -17,9 +17,9 @@
     </div>
 
     <div class="report-tabs" style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-        <button class="btn tab-btn active" onclick="switchReportTab('inventory')">📊 Asset Inventory</button>
-        <button class="btn tab-btn" onclick="switchReportTab('loans')">📜 Loan History</button>
-        <button class="btn tab-btn" onclick="switchReportTab('overdue')">⚠️ Overdue Assets</button>
+        <button class="btn tab-btn active" onclick="switchReportTab('inventory')"> Asset Inventory</button>
+        <button class="btn tab-btn" onclick="switchReportTab('loans')"> Loan History</button>
+        <button class="btn tab-btn" onclick="switchReportTab('overdue')"> Overdue Assets</button>
     </div>
 
     <div id="inventoryTabPanel" class="tab-panel">
@@ -47,7 +47,7 @@
             </div>
             <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn btn-primary" onclick="generateInventoryReport()">Generate Dataset</button>
-                <button class="btn btn-secondary" onclick="exportInventoryCSV()">📥 Export Filtered CSV</button>
+                <button class="btn btn-secondary" onclick="exportInventoryCSV()"> Export Filtered CSV</button>
             </div>
         </div>
         <div class="table-responsive">

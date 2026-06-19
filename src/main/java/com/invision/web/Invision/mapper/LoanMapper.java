@@ -33,8 +33,8 @@ public class LoanMapper {
 
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
 
-
-        return new LoanResponseDTO(String.valueOf(loan.getLoanId()), loan.getAsset().getTitle(), loan.getUser().getName(),
+        //fix: Getting description for the table instead of username
+        return new LoanResponseDTO(String.valueOf(loan.getLoanId()), loan.getAsset().getTitle(), loan.getDescription(),
                 loan.getRequestDate(), loan.getStatus(), loan.getDueDate(), loan.getAssetLoanStatus());
     }
 
