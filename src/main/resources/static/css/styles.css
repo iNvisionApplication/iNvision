@@ -116,7 +116,7 @@ ul {
     width: 100%;
     max-width: 600px;
 
-    animation: splashFadeOut 0.7s ease forwards;
+    animation: splashFadeOut 1.4s ease-in-out forwards;
     animation-delay: 3.4s;
 }
 
@@ -219,8 +219,14 @@ ul {
 }
 
 @keyframes splashFadeOut {
-    to {
+    0% {
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    100% {
         opacity: 0;
+        filter: blur(6px);
         transform: translate(-50%, -50%);
     }
 }

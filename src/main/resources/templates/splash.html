@@ -27,15 +27,26 @@
         <div class="splash-loader-fill"></div>
     </div>
 
-    <p class="splash-loading-text">
+    <p id="splashLoadingText" class="splash-loading-text">
         Launching system...
     </p>
 </div>
 
 <script>
-    setTimeout(() => {
-        window.location.href = "/login";
-    }, 4000);
+    document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const loadingText = document.getElementById("splashLoadingText");
+
+        if (params.get("logout") === "true") {
+            loadingText.textContent = "Signing out...";
+        } else {
+            loadingText.textContent = "Launching system...";
+        }
+
+        setTimeout(() => {
+            window.location.href = "/login";
+        }, 4000);
+    });
 </script>
 
 </body>
