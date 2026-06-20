@@ -256,8 +256,11 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(savedLoan);
     }
 
-    public List<LoanResponseDTO> getAllLoansByStatus(LoanStatus status){
-        return loanRepository.findByStatus(status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
+    public Page<LoanResponseDTO> getAllLoansByStatus(LoanStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        return loanRepository.findByStatus(status, pageable)
+                .map(loanMapper::loanToLoanResponseDTO);
     }
 
     public List<LoanResponseDTO> getAllLoans(){

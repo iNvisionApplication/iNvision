@@ -134,7 +134,7 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     if (role === "ADMIN" || role === "MANAGER") {
 
         if (statusFilter === "PENDING") {
-            url = `/api/loans/status?status=PENDING`;
+            url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${defaultPageSize}`;
         } else {
             url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
         }
@@ -154,18 +154,23 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             return response.json();
         })
         .then(pageData => {
-                    // Safe unpacking extraction for both standard and VIA_DTO page structures
-                    const loans = pageData.content;
-                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
-                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
+            const loans = Array.isArray(pageData) ? pageData : pageData.content;
 
-                    tableBody.innerHTML = "";
+            const totalPages = pageData.page
+                ? pageData.page.totalPages
+                : (pageData.totalPages || 1);
 
-                    if (!Array.isArray(loans) || loans.length === 0) {
-                        tableBody.innerHTML = `<tr><td colspan="6">No loans found.</td></tr>`;
-                        removePaginationControls("loansPaginationControls");
-                        return;
-                    }
+            const currentPage = pageData.page
+                ? pageData.page.number
+                : (pageData.number || 0);
+
+            tableBody.innerHTML = "";
+
+            if (!Array.isArray(loans) || loans.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7">No loans found.</td></tr>`;
+                removePaginationControls("loansPaginationControls");
+                return;
+            }
 
             // Replace the row rendering block inside your loop inside loadUserLoans(pageNumber)
             loans.forEach(loan => {
@@ -209,7 +214,7 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         })
         .catch(error => {
             console.error("Error loading loans:", error);
-            tableBody.innerHTML = `<tr><td colspan="6">Failed to load loans.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7">Failed to load loans.</td></tr>`;
             showErrorModal("System Error", "Failed to retrieve loan history files from the server. Please try again later.");
         });
 }
