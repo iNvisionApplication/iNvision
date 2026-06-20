@@ -10,6 +10,14 @@ function getAssetsPageSize() {
     if (width >= 1000) return 6;
     return 4;
 } // Dynamically fit dimensions in use
+function getLoansPageSize() {
+    const width = window.innerWidth;
+
+    if (width >= 1400) return 12;
+    if (width >= 1100) return 9;
+    if (width >= 768) return 6;
+    return 4;
+}
 let assetSearchTimeout = null;
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -142,16 +150,16 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     if (role === "ADMIN" || role === "MANAGER") {
 
         if (statusFilter === "PENDING") {
-            url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${defaultPageSize}`;
+            url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
         } else {
-            url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+            url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
         }
 
     } else {
 
         if (!userId) return;
 
-        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
+        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
     }
 
     fetch(url)
