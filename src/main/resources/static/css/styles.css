@@ -38,7 +38,7 @@
     --blue-dim: var(--steel-dim);
 
     --sidebar-width: 248px;
-    --topbar-height: 64px;
+    --topbar-height: 0px;
     --radius: 6px;
     --radius-lg: 10px;
 
@@ -221,7 +221,7 @@ ul {
 @keyframes splashFadeOut {
     to {
         opacity: 0;
-        transform: scale(1.03);
+        transform: translate(-50%, -50%);
     }
 }
 
@@ -478,17 +478,11 @@ ul {
 }
 
 .topbar {
-    height: var(--topbar-height);
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 32px;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    box-shadow: var(--shadow-sm);
+    height: 0;
+    padding: 0;
+    border-bottom: none;
+    box-shadow: none;
+    background: transparent;
 }
 
 .topbar-left {
@@ -498,35 +492,12 @@ ul {
     min-width: 0;
 }
 
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.page-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.system-time {
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 0.04em;
-    background: var(--bg-elevated);
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    white-space: nowrap;
+.topbar-right ,.page-title{
+    display: none;
 }
 
 .mobile-menu-btn {
+    margin: 12px;
     display: none;
 }
 
