@@ -63,8 +63,21 @@
 
             <div class="form-group">
                 <label class="form-label" for="password">Password</label>
-                <input class="form-control" type="password" id="password" name="password"
-                       placeholder="••••••••" autocomplete="current-password" required/>
+
+                <div class="password-field">
+                    <input class="form-control"
+                           type="password"
+                           id="password"
+                           name="password"
+                           placeholder="••••••••"
+                           autocomplete="current-password"
+                           required/>
+
+                    <span class="password-toggle"
+                          onclick="togglePassword('password', this)">
+                          <i data-lucide="eye"></i>
+                    </span>
+                </div>
             </div>
 
             <button type="submit" id="loginBtn" class="btn btn-primary btn-full" style="margin-top:8px;">
@@ -107,6 +120,24 @@
         loginBtn.disabled = true;
         loginBtnText.textContent = "Signing In...";
     });
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    function togglePassword(inputId, toggle) {
+        const input = document.getElementById(inputId);
+
+        if (input.type === "password") {
+            input.type = "text";
+            toggle.innerHTML = '<i data-lucide="eye-off"></i>';
+        } else {
+            input.type = "password";
+            toggle.innerHTML = '<i data-lucide="eye"></i>';
+        }
+
+        lucide.createIcons();
+    }
+
+    lucide.createIcons();
 </script>
 
 <script th:src="@{/js/main.js}"></script>
