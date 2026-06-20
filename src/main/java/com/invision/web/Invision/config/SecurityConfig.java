@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public Assets & Non-authenticated view layers
                         .requestMatchers(
-                                "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                "/","/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                 "/login", "/register",
                                 "/forgot-password/**",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
