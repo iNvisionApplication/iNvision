@@ -2,7 +2,15 @@
 // Add these pagination trackers to the top of your script
 let currentAssetsPage = 0;
 let currentLoansPage = 0;
-const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
+function getAssetsPageSize() {
+    const width = window.innerWidth;
+
+    if (width >= 1600) return 10;
+    if (width >= 1300) return 8;
+    if (width >= 1000) return 6;
+    return 4;
+} // Dynamically fit dimensions in use
+let assetSearchTimeout = null;
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -347,6 +355,122 @@ function executeLoanAction(loanId, actionEndpoint) {
 
 // ================= ASSETS =================
 
+function searchAllAssets() {
+    const input = document.getElementById("assetSearchInput");
+    const container = document.getElementById("availableAssetsContainer");
+    const assetCount = document.getElementById("assetCount");
+
+    if (!input || !container) return;
+
+    clearTimeout(assetSearchTimeout);
+
+    assetSearchTimeout = setTimeout(() => {
+        const searchText = input.value.trim().toLowerCase();
+
+        if (!searchText) {
+            loadAvailableAssets(0);
+            return;
+        }
+
+        fetch(`/api/assets?page=0&size=1000`)
+            .then(response => response.json())
+            .then(pageData => {
+                const assets = pageData.content || [];
+
+                const filteredAssets = assets.filter(asset => {
+                    const searchableText = `
+                        ${asset.title || ""}
+                        ${asset.serialNumber || ""}
+                        ${asset.category || ""}
+                        ${asset.condition || ""}
+                        ${asset.location || ""}
+                        ${asset.status || ""}
+                    `.toLowerCase();
+
+                    return searchableText.includes(searchText);
+                });
+
+                renderAssetSearchResults(filteredAssets);
+
+                if (assetCount) {
+                    assetCount.innerText = `${filteredAssets.length} result(s) found`;
+                }
+
+                removePaginationControls("assetsPaginationControls");
+            })
+            .catch(error => {
+                console.error("Asset search failed:", error);
+                showErrorModal("Search Failed", "Unable to search assets right now.");
+            });
+
+    }, 250);
+}
+
+function renderAssetSearchResults(assets) {
+    const container = document.getElementById("availableAssetsContainer");
+    const role = document.getElementById("currentUserRole")?.value || "BORROWER";
+    const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!assets || assets.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No matching assets</h3>
+                <p>Try a different title, serial number, category, condition, or location.</p>
+            </div>
+        `;
+        return;
+    }
+
+    assets.forEach(asset => {
+        const card = document.createElement("div");
+        card.className = "asset-card";
+
+        const imagePath = getAssetImagePath(asset.photoPath);
+        const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
+
+        const actionButton = isLoaned
+            ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
+                    ${asset.title || "Untitled Asset"} (Borrowed)
+               </button>`
+            : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                    ${asset.title || "Untitled Asset"}
+               </button>`;
+
+        card.innerHTML = `
+            <div class="asset-image-wrap">
+                <img src="${imagePath}"
+                     alt="Asset Photo"
+                     class="asset-img"
+                     onerror="this.onerror=null; this.src='/uploads/macbook.png';">
+                ${getAssetStatusBadge(asset.status)}
+            </div>
+
+            <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
+                ${actionButton}
+                ${isAdminOrManager ? `
+                    <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                        ⚙️ Edit
+                    </a>
+                ` : ''}
+            </div>
+
+            <div class="asset-meta">
+                <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
+                <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>
+                <p><strong>Condition</strong><span>${asset.condition || "N/A"}</span></p>
+                <p><strong>Location</strong><span>${asset.location || "N/A"}</span></p>
+                <p><strong>Cost</strong><span>R${asset.cost || "0.00"}</span></p>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
 function showErrorModal(title, message) {
     const backdrop = document.getElementById("errorModalBackdrop");
     const titleText = document.getElementById("errorModalTitle");
@@ -465,7 +589,7 @@ function loadAvailableAssets(pageNumber) {
     const role = document.getElementById("currentUserRole")?.value || "BORROWER";
     const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
-    fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
+    fetch(`/api/assets?page=${pageNumber}&size=${getAssetsPageSize()}`)
         .then(async response => {
             if (!response.ok) {
                 throw new Error(`Server returned status ${response.status}`);

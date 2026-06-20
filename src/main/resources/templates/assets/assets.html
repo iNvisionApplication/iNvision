@@ -45,6 +45,18 @@
                 <span id="assetCount">Loading...</span>
             </div>
 
+            <div class="asset-search-wrapper">
+
+                <i data-lucide="search" class="asset-search-icon"></i>
+
+                <input type="text"
+                       id="assetSearchInput"
+                       class="form-control asset-search"
+                       placeholder="Search assets..."
+                       onkeyup="searchAllAssets()">
+
+            </div>
+
             <div class="asset-grid" id="availableAssetsContainer">
                 <p>Loading available assets...</p>
             </div>
