@@ -9,9 +9,11 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/config/SecurityConfig.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/AdminUserController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/AssetController.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/AuditLogApiController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/AuthController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/LoanController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/PasswordResetController.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/ReportApiController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/api/UsersController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/AssetPageController.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/controller/pages/CustomErrorController.java
@@ -21,9 +23,11 @@
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetRequestDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetResponseDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AssetSearchRequest.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/AuditLogReportDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/DashboardMetricsDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/ErrorResponseDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanActionDTO.java
+/Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanReportDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanRequestDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanResponseDTO.java
 /Users/david/IdeaProjects/iNvision/src/main/java/com/invision/web/Invision/dto/LoanStatusDTO.java

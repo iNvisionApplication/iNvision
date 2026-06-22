@@ -9,6 +9,7 @@ com/invision/web/Invision/model/Loan$LoanBuilder.class
 com/invision/web/Invision/exception/asset/DuplicateSerialNumberException.class
 com/invision/web/Invision/enums/Condition.class
 com/invision/web/Invision/model/PasswordResetToken.class
+com/invision/web/Invision/dto/AuditLogReportDTO.class
 com/invision/web/Invision/service/NotificationService.class
 com/invision/web/Invision/exception/user/PasswordMismatchException.class
 com/invision/web/Invision/dto/LoanActionDTO.class
@@ -42,6 +43,7 @@ com/invision/web/Invision/dto/UserRegistrationDTO.class
 com/invision/web/Invision/enums/AssetStatus.class
 com/invision/web/Invision/enums/Category.class
 com/invision/web/Invision/exception/user/UserNotFoundException.class
+com/invision/web/Invision/dto/LoanReportDTO.class
 com/invision/web/Invision/model/AuditLog$AuditLogBuilder.class
 com/invision/web/Invision/dto/LoanStatusDTO.class
 com/invision/web/Invision/controller/pages/AssetPageController.class
@@ -61,7 +63,9 @@ com/invision/web/Invision/event/LoanRequestEvent.class
 com/invision/web/Invision/dto/DashboardMetricsDTO.class
 com/invision/web/Invision/mapper/UserMapper.class
 com/invision/web/Invision/dto/UserResponseDTO.class
+com/invision/web/Invision/controller/api/ReportApiController.class
 com/invision/web/Invision/config/CustomUserDetails.class
+com/invision/web/Invision/controller/api/AuditLogApiController.class
 com/invision/web/Invision/exception/loan/InvalidLoanStatusChangeException.class
 com/invision/web/Invision/exception/loan/NoLoansFoundException.class
 com/invision/web/Invision/enums/NotificationReason.class
