@@ -46,9 +46,10 @@ public class LoanService {
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getAllOverdueLoans(){
-        return loanRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), LoanStatus.RETURNED)
+        return loanRepository.findByDueDateBeforeAndStatus(LocalDateTime.now(), LoanStatus.APPROVED)
                 .stream()
                 .map(loanMapper::loanToLoanResponseDTO)
                 .toList();

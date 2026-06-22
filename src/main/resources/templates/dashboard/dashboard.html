@@ -32,7 +32,7 @@
                 <div class="stat-sub">Currently checked out</div>
             </div>
         </a>
-        <a th:href="@{/reports/overdue}" class="stat-link">
+        <a th:href="@{/loans(filter='OVERDUE')}" class="stat-link">
             <div class="stat-card red">
                 <div class="stat-label">Overdue</div>
                 <div class="stat-value" th:text="${overdueLoans}">0</div>

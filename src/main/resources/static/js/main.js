@@ -141,6 +141,7 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     const role = getCurrentUserRole();
     const params = new URLSearchParams(window.location.search);
     const statusFilter = params.get("status");
+    const filter = params.get("filter");
     const tableBody = document.getElementById("loanHistoryBody");
     const tableWrapper = tableBody?.closest('.table-wrapper');
 
@@ -151,7 +152,12 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
 
         if (statusFilter === "PENDING") {
             url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
-        } else {
+        }
+        else if (filter === "OVERDUE") {
+            url = `/api/loans/overdue`;
+        }
+
+        else {
             url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
         }
 
