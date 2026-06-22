@@ -1,6 +1,7 @@
 package com.invision.web.Invision.config;
 
 import com.invision.web.Invision.service.CustomUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
