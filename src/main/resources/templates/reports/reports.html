@@ -51,8 +51,8 @@
                 <button class="btn btn-secondary" onclick="exportInventoryCSV()"> Export Filtered CSV</button>
             </div>
         </div>
-        <div class="table-responsive">
-            <table class="table" id="inventoryTable">
+        <div class="table-wrapper table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table" id="inventoryTable" style="min-width: 800px; width: 100%;">
                 <thead>
                 <tr>
                     <th>Asset ID</th>
@@ -97,8 +97,8 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table" id="loanTable">
+        <div class="table-wrapper table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table" id="loanTable" style="min-width: 900px; width: 100%;">
                 <thead>
                 <tr>
                     <th>Loan ID</th>
@@ -129,8 +129,8 @@
                 <button class="btn btn-secondary" onclick="exportOverdueCSV()"> Export Overdue CSV</button>
             </div>
         </div>
-        <div class="table-responsive">
-            <table class="table" id="overdueTable">
+        <div class="table-wrapper table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table" id="overdueTable" style="min-width: 850px; width: 100%;">
                 <thead>
                 <tr>
                     <th>Loan ID</th>
