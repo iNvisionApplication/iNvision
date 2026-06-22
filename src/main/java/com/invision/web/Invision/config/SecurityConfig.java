@@ -42,13 +42,16 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Public Assets & Non-authenticated view layers
-                        .requestMatchers(
-                                "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
-                                "/error", "/error/**",
-                                "/login", "/register",
-                                "/forgot-password/**",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-                        ).permitAll()
+
+                                // Public Assets & Non-authenticated view layers
+                                .requestMatchers(
+                                        "/", // 💡 ADD THIS LINE: Explicitly opens access to your root index landing page view
+                                        "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                        "/error", "/error/**",
+                                        "/login", "/register",
+                                        "/forgot-password/**",
+                                        "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                                ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/**")
                         .hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**")

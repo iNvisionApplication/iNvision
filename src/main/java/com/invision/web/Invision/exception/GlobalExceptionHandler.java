@@ -155,7 +155,7 @@ public class GlobalExceptionHandler {
                         exception.getMessage(),
                         request.getDescription(false),
                         LocalDateTime.now()
-                        )
+                )
         );
     }
 
@@ -184,6 +184,7 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now())
         );
     }
+
 
 
     @ExceptionHandler(AccessDeniedException.class)
