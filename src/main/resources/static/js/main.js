@@ -1155,13 +1155,15 @@ function submitAssetUpdate(event) {
         body: JSON.stringify(updatedPayload)
     })
     .then(async response => {
+        // Read the stream exactly ONCE
         const textMessage = await response.text();
+
         if (response.ok) {
-            // Pass a clean flag and the message to the destination page
-            window.location.href = `/assets?success=true&msg=${encodeURIComponent(textMessage)}`;
+            alert("System Record Confirmed: " + textMessage);
+            window.location.href = `/assets?success=true`;
         } else {
-            const textMessage = await response.text();
-            alert("Update Rejected: " + textMessage); // Keep error alert or use error modal
+            // Use the variable, do not re-read response.text()
+            alert("Update Refused: " + textMessage);
         }
     })
     .catch(error => {
