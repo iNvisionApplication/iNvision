@@ -339,6 +339,11 @@ public class LoanService {
 
         return loans.map(loanMapper::loanToLoanResponseDTO);
     }
+    @PreAuthorize("hasRole('ROLE_MANAGER')")
+    public List<LoanResponseDTO> getDepartmentLoans(){
+        User manager = getAuthenticatedUser();
+        return loanRepository.findByUserDepartment(manager.getDepartment()).stream().map(loanMapper::loanToLoanResponseDTO).toList();
+    }
 
     // Add this endpoint method inside LoanService.java
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")

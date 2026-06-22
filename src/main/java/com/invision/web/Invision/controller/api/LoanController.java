@@ -62,6 +62,11 @@ public class LoanController {
         );
     }
 
+    @GetMapping("/department")
+    public ResponseEntity<List<LoanResponseDTO>> getDepartmentLoans(){
+        return ResponseEntity.ok(loanService.getDepartmentLoans());
+    }
+
     @GetMapping("/overdue")
     public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans(){
         return ResponseEntity.ok(loanService.getAllOverdueLoans());

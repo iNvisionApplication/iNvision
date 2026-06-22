@@ -58,6 +58,8 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     long countByStatus(LoanStatus status);
 
+    List<Loan> findByUserDepartment(Department department);
+
     long countByStatusAndDueDateBefore(
             LoanStatus status,
             LocalDateTime now

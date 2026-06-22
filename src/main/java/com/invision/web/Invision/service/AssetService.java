@@ -56,23 +56,29 @@ public class AssetService {
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        asset.setTitle(assetDetails.title());
-        asset.setCategory(assetDetails.category());
-        asset.setSerialNumber(asset.getSerialNumber());
-        asset.setAcquisitionDate(assetDetails.acquisitionDate());
-        asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
-        asset.setLocation(assetDetails.location());
-        asset.setCondition(assetDetails.condition());
-        asset.setStatus(AssetStatus.AVAILABLE);
-        asset.setPhotoPath(assetDetails.path());
+        if(asset.getStatus()==AssetStatus.AVAILABLE){
+            asset.setTitle(assetDetails.title());
+            asset.setCategory(assetDetails.category());
+            asset.setSerialNumber(asset.getSerialNumber());
+            asset.setAcquisitionDate(assetDetails.acquisitionDate());
+            asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
+            asset.setLocation(assetDetails.location());
+            asset.setCondition(assetDetails.condition());
+            asset.setStatus(AssetStatus.AVAILABLE);
+            asset.setPhotoPath(assetDetails.path());
 
-        assetRepository.save(asset);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("ASSET IS LOANED. CANNOT EDIT!");
+        }
+
+
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
