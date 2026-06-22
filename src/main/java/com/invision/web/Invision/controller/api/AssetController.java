@@ -5,6 +5,7 @@ import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.service.AssetService;
 import jakarta.validation.Valid;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -71,7 +72,7 @@ public class AssetController {
 
     // Retire an asset
     @PutMapping("/retire/{assetId}")
-    public ResponseEntity<String> retireAsset(@PathVariable Long assetId) {
+    public ResponseEntity<String> retireAsset(@PathVariable Long assetId) throws BadRequestException {
         assetService.retireAsset(assetId);
         return ResponseEntity.ok("Asset retired successfully with ID: " + assetId);
     }
