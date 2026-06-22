@@ -83,6 +83,7 @@ public class SecurityConfig {
                         .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
+                        .sessionRegistry(sessionRegistry())
                 ).exceptionHandling(ex -> ex
                 .accessDeniedHandler((request, response, exception) -> {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
