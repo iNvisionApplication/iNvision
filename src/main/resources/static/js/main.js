@@ -2,7 +2,23 @@
 // Add these pagination trackers to the top of your script
 let currentAssetsPage = 0;
 let currentLoansPage = 0;
-const defaultPageSize = 4; // Fits a 3x3 dashboard layout grid beautifully
+function getAssetsPageSize() {
+    const width = window.innerWidth;
+
+    if (width >= 1600) return 10;
+    if (width >= 1300) return 8;
+    if (width >= 1000) return 6;
+    return 4;
+} // Dynamically fit dimensions in use
+function getLoansPageSize() {
+    const width = window.innerWidth;
+
+    if (width >= 1400) return 12;
+    if (width >= 1100) return 9;
+    if (width >= 768) return 6;
+    return 4;
+}
+let assetSearchTimeout = null;
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -134,16 +150,16 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     if (role === "ADMIN" || role === "MANAGER") {
 
         if (statusFilter === "PENDING") {
-            url = `/api/loans/status?status=PENDING`;
+            url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
         } else {
-            url = `/api/loans?page=${pageNumber}&size=${defaultPageSize}`;
+            url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
         }
 
     } else {
 
         if (!userId) return;
 
-        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${defaultPageSize}`;
+        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
     }
 
     fetch(url)
@@ -154,44 +170,59 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
             return response.json();
         })
         .then(pageData => {
-                    // Safe unpacking extraction for both standard and VIA_DTO page structures
-                    const loans = pageData.content;
-                    const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
-                    const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
+            const loans = Array.isArray(pageData) ? pageData : pageData.content;
 
-                    tableBody.innerHTML = "";
+            const totalPages = pageData.page
+                ? pageData.page.totalPages
+                : (pageData.totalPages || 1);
 
-                    if (!Array.isArray(loans) || loans.length === 0) {
-                        tableBody.innerHTML = `<tr><td colspan="6">No loans found.</td></tr>`;
-                        removePaginationControls("loansPaginationControls");
-                        return;
-                    }
+            const currentPage = pageData.page
+                ? pageData.page.number
+                : (pageData.number || 0);
 
+            tableBody.innerHTML = "";
+
+            if (!Array.isArray(loans) || loans.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7">No loans found.</td></tr>`;
+                removePaginationControls("loansPaginationControls");
+                return;
+            }
+
+            // Replace the row rendering block inside your loop inside loadUserLoans(pageNumber)
             loans.forEach(loan => {
                 const row = document.createElement("tr");
+                let actionsHtml = "";
 
-                const canApprove =
-                    (role === "ADMIN" || role === "MANAGER") &&
-                    loan.status === "PENDING";
+                if (role === "ADMIN" || role === "MANAGER") {
+                    if (loan.status === "PENDING") {
+                        actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>`;
+                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                        actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
+                    } else {
+                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
+                    }
+                } else {
+                    // BORROWER SELECTIONS
+                    if (loan.status === "APPROVED" && loan.assetLoanStatus === "PENDING_COLLECTION") {
+                        actionsHtml = `<button class="btn btn-sm btn-steel" onclick="executeLoanAction(${loan.loanId}, 'collect')">Confirm Collection</button>`;
+                    } else if (loan.status === "APPROVED" && loan.assetLoanStatus === "COLLECTED") {
+                        actionsHtml = `<button class="btn btn-sm btn-danger" onclick="executeLoanAction(${loan.loanId}, 'return')">Return Asset</button>`;
+                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                        actionsHtml = `<em style="font-size:12px; color:var(--amber);">Awaiting Manager Sign-off</em>`;
+                    } else {
+                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">No Action</span>`;
+                    }
+                }
 
                 row.innerHTML = `
-                    <td>${loan.loanId || "N/A"}</td>
+                    <td><strong>#${loan.loanId || "N/A"}</strong></td>
                     <td>${loan.assetTitle || "N/A"}</td>
                     <td>${loan.description || "N/A"}</td>
                     <td>${formatDateTime(loan.requestDate)}</td>
                     <td>${formatDateTime(loan.dueDate)}</td>
                     <td>${getStatusBadge(loan.status)}</td>
-                    <td>
-                     ${
-                    canApprove
-                        ? `<button class="btn-primary" onclick="approveLoan(${loan.loanId})">
-                       Approve
-                   </button>`
-                        : ""
-                    }
-                    </td>
-`;
-
+                    <td class="table-actions">${actionsHtml}</td>
+                `;
                 tableBody.appendChild(row);
             });
 
@@ -199,7 +230,7 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         })
         .catch(error => {
             console.error("Error loading loans:", error);
-            tableBody.innerHTML = `<tr><td colspan="6">Failed to load loans.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7">Failed to load loans.</td></tr>`;
             showErrorModal("System Error", "Failed to retrieve loan history files from the server. Please try again later.");
         });
 }
@@ -309,7 +340,144 @@ function submitLoanRequest(event) {
         });
 }
 
+function executeLoanAction(loanId, actionEndpoint) {
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+    fetch(`/api/loans/${loanId}/${actionEndpoint}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            [header]: token
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Operational transformation state rejected by server rules.");
+        loadUserLoans(currentLoansPage); // Refresh the active table frame dynamically
+    })
+    .catch(error => {
+        console.error("Workflow transmission failure:", error);
+        showErrorModal("Action Aborted", "Could not complete update validation sequence.");
+    });
+}
+
 // ================= ASSETS =================
+
+function searchAllAssets() {
+    const input = document.getElementById("assetSearchInput");
+    const container = document.getElementById("availableAssetsContainer");
+    const assetCount = document.getElementById("assetCount");
+
+    if (!input || !container) return;
+
+    clearTimeout(assetSearchTimeout);
+
+    assetSearchTimeout = setTimeout(() => {
+        const searchText = input.value.trim().toLowerCase();
+
+        if (!searchText) {
+            loadAvailableAssets(0);
+            return;
+        }
+
+        fetch(`/api/assets?page=0&size=1000`)
+            .then(response => response.json())
+            .then(pageData => {
+                const assets = pageData.content || [];
+
+                const filteredAssets = assets.filter(asset => {
+                    const searchableText = `
+                        ${asset.title || ""}
+                        ${asset.serialNumber || ""}
+                        ${asset.category || ""}
+                        ${asset.condition || ""}
+                        ${asset.location || ""}
+                        ${asset.status || ""}
+                    `.toLowerCase();
+
+                    return searchableText.includes(searchText);
+                });
+
+                renderAssetSearchResults(filteredAssets);
+
+                if (assetCount) {
+                    assetCount.innerText = `${filteredAssets.length} result(s) found`;
+                }
+
+                removePaginationControls("assetsPaginationControls");
+            })
+            .catch(error => {
+                console.error("Asset search failed:", error);
+                showErrorModal("Search Failed", "Unable to search assets right now.");
+            });
+
+    }, 250);
+}
+
+function renderAssetSearchResults(assets) {
+    const container = document.getElementById("availableAssetsContainer");
+    const role = document.getElementById("currentUserRole")?.value || "BORROWER";
+    const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!assets || assets.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No matching assets</h3>
+                <p>Try a different title, serial number, category, condition, or location.</p>
+            </div>
+        `;
+        return;
+    }
+
+    assets.forEach(asset => {
+        const card = document.createElement("div");
+        card.className = "asset-card";
+
+        const imagePath = getAssetImagePath(asset.photoPath);
+        const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
+
+        const actionButton = isLoaned
+            ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
+                    ${asset.title || "Untitled Asset"} (Borrowed)
+               </button>`
+            : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
+                    ${asset.title || "Untitled Asset"}
+               </button>`;
+
+        card.innerHTML = `
+            <div class="asset-image-wrap">
+                <img src="${imagePath}"
+                     alt="Asset Photo"
+                     class="asset-img"
+                     onerror="this.onerror=null; this.src='/uploads/macbook.png';">
+                ${getAssetStatusBadge(asset.status)}
+            </div>
+
+            <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
+                ${actionButton}
+                ${isAdminOrManager ? `
+                    <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                        ⚙️ Edit
+                    </a>
+                ` : ''}
+            </div>
+
+            <div class="asset-meta">
+                <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
+                <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>
+                <p><strong>Condition</strong><span>${asset.condition || "N/A"}</span></p>
+                <p><strong>Location</strong><span>${asset.location || "N/A"}</span></p>
+                <p><strong>Cost</strong><span>R${asset.cost || "0.00"}</span></p>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
 
 function showErrorModal(title, message) {
     const backdrop = document.getElementById("errorModalBackdrop");
@@ -429,7 +597,7 @@ function loadAvailableAssets(pageNumber) {
     const role = document.getElementById("currentUserRole")?.value || "BORROWER";
     const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
-    fetch(`/api/assets?page=${pageNumber}&size=${defaultPageSize}`)
+    fetch(`/api/assets?page=${pageNumber}&size=${getAssetsPageSize()}`)
         .then(async response => {
             if (!response.ok) {
                 throw new Error(`Server returned status ${response.status}`);
@@ -505,8 +673,15 @@ function loadAvailableAssets(pageNumber) {
 
                 container.appendChild(card);
             });
+            //fix pagination placement for mobile
 
-            buildPaginationControls("assetsPaginationControls", container, totalPages, currentPage, loadAvailableAssets);
+            const loanPanel = document.getElementById("loanRequestPanel");
+
+            if (loanPanel) {
+                buildPaginationControls("assetsPaginationControls", loanPanel, totalPages, currentPage, loadAvailableAssets);
+            } else {
+                buildPaginationControls("assetsPaginationControls", container, totalPages, currentPage, loadAvailableAssets);
+            }
         })
         .catch(error => {
             console.error("Error loading assets:", error);

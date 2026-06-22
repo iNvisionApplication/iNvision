@@ -256,8 +256,11 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(savedLoan);
     }
 
-    public List<LoanResponseDTO> getAllLoansByStatus(LoanStatus status){
-        return loanRepository.findByStatus(status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
+    public Page<LoanResponseDTO> getAllLoansByStatus(LoanStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        return loanRepository.findByStatus(status, pageable)
+                .map(loanMapper::loanToLoanResponseDTO);
     }
 
     public List<LoanResponseDTO> getAllLoans(){
@@ -335,6 +338,30 @@ public class LoanService {
         }
 
         return loans.map(loanMapper::loanToLoanResponseDTO);
+    }
+
+    // Add this endpoint method inside LoanService.java
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
+    @Transactional
+    public LoanResponseDTO confirmLoanReturn(Long loanId) {
+        User manager = getAuthenticatedUser();
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan record not found"));
+
+        loan.setStatus(LoanStatus.RETURNED);
+        loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
+        loan.setReturnDate(LocalDateTime.now());
+
+        Asset asset = loan.getAsset();
+        if (asset != null) {
+            asset.setStatus(AssetStatus.AVAILABLE);
+            assetRepository.save(asset);
+        }
+
+        String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
+        auditLogService.logCheckIn(manager.getUserId(), loanId, assetInfo);
+
+        return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
 }

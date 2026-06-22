@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Launching iNVision AMS</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+    <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+</head>
+<body class="splash-body">
+
+<div class="splash-screen">
+    <div class="splash-logo-mark">
+        iN
+    </div>
+
+    <h1 class="splash-title">iNVision</h1>
+
+    <p class="splash-subtitle">
+        Asset Management System
+    </p>
+
+    <div class="splash-loader">
+        <div class="splash-loader-fill"></div>
+    </div>
+
+    <p id="splashLoadingText" class="splash-loading-text">
+        Launching system...
+    </p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const loadingText = document.getElementById("splashLoadingText");
+
+        if (params.get("logout") === "true") {
+            loadingText.textContent = "Signing out...";
+        } else {
+            loadingText.textContent = "Launching system...";
+        }
+
+        setTimeout(() => {
+            window.location.href = "/login";
+        }, 4000);
+    });
+</script>
+
+</body>
+</html>

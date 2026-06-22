@@ -51,10 +51,15 @@ public class LoanController {
 
     @GetMapping("/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
-    public ResponseEntity<List<LoanResponseDTO>> getLoansByStatus(
-            @RequestParam LoanStatus status) {
+    public ResponseEntity<Page<LoanResponseDTO>> getLoansByStatus(
+            @RequestParam LoanStatus status,
+            //Pending requests page should also use pagination
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "4") int size) {
 
-        return ResponseEntity.ok(loanService.getAllLoansByStatus(status));
+        return ResponseEntity.ok(
+                loanService.getAllLoansByStatus(status, page, size)
+        );
     }
 
     @GetMapping("/overdue")
@@ -110,6 +115,24 @@ public class LoanController {
             @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(loanService.getUserLoans(userId, page, size));
+    }
+
+    @PutMapping("/{loanId}/collect")
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    public ResponseEntity<LoanResponseDTO> collectLoan(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.loanActionCollect(loanId));
+    }
+
+    @PutMapping("/{loanId}/return")
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    public ResponseEntity<LoanResponseDTO> initiateReturn(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.loanActionReturn(loanId));
+    }
+
+    @PutMapping("/{loanId}/confirm-return")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    public ResponseEntity<LoanResponseDTO> confirmReturn(@PathVariable Long loanId) {
+        return ResponseEntity.ok(loanService.confirmLoanReturn(loanId));
     }
 
 }
