@@ -181,6 +181,44 @@
     </div>
 </main>
 
+<!-- Ask Me Assistant -->
+<aside id="askMePanel" class="askme-panel">
+
+    <div class="askme-header">
+        <div>
+            <h3>Ask iNVision</h3>
+            <p>System Assistant</p>
+        </div>
+
+        <button id="askMeClose" type="button">×</button>
+    </div>
+
+    <div id="askMeMessages" class="askme-messages">
+        <div class="askme-message bot">
+            Hi 👋 I can help you navigate iNVision.
+        </div>
+    </div>
+
+    <form id="askMeForm" class="askme-form">
+        <input
+                id="askMeInput"
+                type="text"
+                placeholder="Ask a question..."
+                autocomplete="off">
+
+        <button type="submit">
+            Send
+        </button>
+    </form>
+
+</aside>
+
+<button id="askMeToggle"
+        class="askme-toggle"
+        type="button">
+    Ask Me
+</button>
+
 <script th:src="@{/js/main.js}"></script>
 </body>
 </html>

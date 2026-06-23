@@ -21,6 +21,10 @@ public class CustomUserDetails implements UserDetails {
         return user.getUserId();
     }
 
+    public String getDepartment() {
+        return user.getDepartment().name();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Maps your DB role/RBAC to Spring Security authorities
