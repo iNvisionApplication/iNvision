@@ -137,26 +137,18 @@ function loadUserLoans(pageNumber) {
       if (statusFilter === "PENDING") {
           url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
       } 
-      else if (statusFilter === "OVERDUE") { // 💡 FIXED: Changed 'filter' to 'statusFilter'
-          url = `/api/loans/overdue?page=${pageNumber}&size=${getLoansPageSize()}`; // 💡 FIXED: Added missing pagination parameters
-      } 
+      else if (statusFilter === "OVERDUE") {
+          url = `/api/loans/overdue?page=${pageNumber}&size=${getLoansPageSize()}`;
+      }
       else if (role === "MANAGER") {
-          // Limits a manager's timeline strictly to their own operational department
           url = `/api/loans/department?page=${pageNumber}&size=${getLoansPageSize()}`;
-      } 
+      }
       else {
-          // ADMIN profiles fall through here to view global logs across all modules
           url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
       }
 
     } else {
         // Borrower routing falls through here
-        if (!userId) return;
-        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
-    }
-            url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
-        }
-    } else {
         if (!userId) return;
         url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
     }
@@ -185,7 +177,7 @@ function loadUserLoans(pageNumber) {
                 const row = document.createElement("tr");
                 let actionsHtml = "";
 
-                if (role === "MANAGER") {
+                if (role === "MANAGER" || role === "ADMIN") {
                     if (loan.status === "PENDING") {
                         actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>
                                         <button class="btn btn-sm btn-danger" onclick="rejectLoan(${loan.loanId})">Reject</button>`;
