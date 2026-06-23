@@ -141,6 +141,7 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     const role = getCurrentUserRole();
     const params = new URLSearchParams(window.location.search);
     const statusFilter = params.get("status");
+    const userDepartment = params.get("userDepartment");
     const filter = params.get("filter");
     const tableBody = document.getElementById("loanHistoryBody");
     const tableWrapper = tableBody?.closest('.table-wrapper');
@@ -150,12 +151,14 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
 
+
         if (statusFilter === "PENDING") {
             url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
         }
         else if (filter === "OVERDUE") {
             url = `/api/loans/overdue`;
         }
+
 
         else {
             url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
@@ -199,9 +202,11 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                 const row = document.createElement("tr");
                 let actionsHtml = "";
 
-                if (role === "ADMIN" || role === "MANAGER") {
+                if (role === "MANAGER") {
                     if (loan.status === "PENDING") {
-                        actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>`;
+                        actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>
+                                        <button class="btn btn-sm btn-danger" onclick="rejectLoan(${loan.loanId})">Reject</button>`;
+
                     } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
                         actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
                     } else {
@@ -269,6 +274,44 @@ async function approveLoan(loanId) {
         showErrorModal(
             "Approval Failed",
             "Unable to approve this loan request."
+        );
+    }
+}
+
+async function rejectLoan(loanId) {
+
+    const token = document
+        .querySelector("meta[name='_csrf']")
+        .getAttribute("content");
+
+    const header = document
+        .querySelector("meta[name='_csrf_header']")
+        .getAttribute("content");
+
+    try {
+
+        const response = await fetch(`/api/loans/${loanId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                [header]: token
+            },
+            body: JSON.stringify({
+                loanStatus: "REJECTED"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        loadUserLoans(currentLoansPage);
+
+    } catch (error) {
+
+        showErrorModal(
+            "Rejection Failed",
+            "Unable to reject this loan request."
         );
     }
 }
@@ -1225,3 +1268,50 @@ function showToast(message) {
         toast.addEventListener("animationend", () => toast.remove());
     }, 4000);
 }
+
+// ================= ASK ME CHATBOT =================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("askMeToggle");
+    const closeBtn = document.getElementById("askMeClose");
+    const askMeForm = document.getElementById("askMeForm");
+    const askMeInput = document.getElementById("askMeInput");
+    const askMeMessages = document.getElementById("askMeMessages");
+
+    if (!toggleBtn || !closeBtn || !askMeForm || !askMeInput || !askMeMessages) return;
+
+    toggleBtn.addEventListener("click", () => {
+        document.body.classList.add("askme-open");
+        askMeInput.focus();
+    });
+
+    closeBtn.addEventListener("click", () => {
+        document.body.classList.remove("askme-open");
+    });
+
+    askMeForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const question = askMeInput.value.trim();
+        if (!question) return;
+
+        addAskMeMessage(question, "user");
+        askMeInput.value = "";
+
+        setTimeout(() => {
+            addAskMeMessage(
+                "This is the Ask iNVision assistant. Backend AI connection will be added next.",
+                "bot"
+            );
+        }, 400);
+    });
+
+    function addAskMeMessage(text, sender) {
+        const message = document.createElement("div");
+        message.className = `askme-message ${sender}`;
+        message.textContent = text;
+
+        askMeMessages.appendChild(message);
+        askMeMessages.scrollTop = askMeMessages.scrollHeight;
+    }
+});

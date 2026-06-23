@@ -79,6 +79,19 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     Page<Loan> findByUserUserId(Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "user"})
+    Page<Loan> findByUserDepartment(
+            Department department,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"asset", "user"})
+    Page<Loan> findByStatusAndUserDepartment(
+            LoanStatus status,
+            Department department,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"asset", "user"})
     Page<Loan> findByStatus(LoanStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "user"})
