@@ -32,10 +32,21 @@ public class LoanMapper {
 
 
     public LoanResponseDTO loanToLoanResponseDTO(Loan loan){
+        if (loan == null) {
+            return null;
+        }
 
-        //fix: Getting description for the table instead of username
-        return new LoanResponseDTO(String.valueOf(loan.getLoanId()), loan.getAsset().getTitle(), loan.getDescription(),
-                loan.getRequestDate(), loan.getStatus(), loan.getDueDate(), loan.getAssetLoanStatus());
+        // ✅ FIXED: Added borrower name extraction right before the description parameter
+        return new LoanResponseDTO(
+                String.valueOf(loan.getLoanId()),
+                loan.getAsset() != null ? loan.getAsset().getTitle() : "N/A",
+                loan.getUser() != null ? loan.getUser().getName() : "SYSTEM", // 💡 Ties to borrowerName
+                loan.getDescription(),
+                loan.getRequestDate(),
+                loan.getStatus(),
+                loan.getDueDate(),
+                loan.getAssetLoanStatus()
+        );
     }
 
     public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO, Department department, Long loanId){

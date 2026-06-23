@@ -190,6 +190,7 @@ function loadUserLoans(pageNumber) {
                 row.innerHTML = `
                     <td><strong>#${loan.loanId || "N/A"}</strong></td>
                     <td>${loan.assetTitle || "N/A"}</td>
+                    <td><strong>${loan.borrowerName || "N/A"}</strong></td>
                     <td>${loan.description || "N/A"}</td>
                     <td>${formatDateTime(loan.requestDate)}</td>
                     <td>${formatDateTime(loan.dueDate)}</td>
