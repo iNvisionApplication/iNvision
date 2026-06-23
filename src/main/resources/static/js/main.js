@@ -146,19 +146,23 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
 
     if (!tableBody) return;
 
+    // ─── UPDATE THIS ROUTING SEGMENT INSIDE YOUR loadUserLoans(pageNumber) FUNCTION ───
+
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
 
         if (statusFilter === "PENDING") {
             url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
+        } else if (role === "MANAGER") {
+            // ⚡ NEW ROUTE: Limits a manager's timeline strictly to their own operational department
+            url = `/api/loans/department?page=${pageNumber}&size=${getLoansPageSize()}`;
         } else {
+            // ADMIN profiles fall through here to view global logs across all modules
             url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
         }
 
     } else {
-
         if (!userId) return;
-
         url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
     }
 

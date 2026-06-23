@@ -65,7 +65,7 @@ public class AssetController {
     @PutMapping("/update/{assetId}")
     public ResponseEntity<String> updateAsset(
             @PathVariable Long assetId,
-            @Valid @RequestBody AssetRequestDTO assetDetails) {
+            @Valid @RequestBody AssetRequestDTO assetDetails) throws BadRequestException {
         String result = assetService.updateAsset(assetId, assetDetails);
         return ResponseEntity.ok(result);
     }

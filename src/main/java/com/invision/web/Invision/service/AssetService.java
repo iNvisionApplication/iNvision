@@ -17,7 +17,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.coyote.BadRequestException;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +33,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -60,23 +59,29 @@ public class AssetService {
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        asset.setTitle(assetDetails.title());
-        asset.setCategory(assetDetails.category());
-        asset.setSerialNumber(assetDetails.serialNumber());
-        asset.setAcquisitionDate(assetDetails.acquisitionDate());
-        asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
-        asset.setLocation(assetDetails.location());
-        asset.setCondition(assetDetails.condition());
-        asset.setStatus(AssetStatus.AVAILABLE);
-        asset.setPhotoPath(assetDetails.path());
+        if(asset.getStatus()==AssetStatus.AVAILABLE){
+            asset.setTitle(assetDetails.title());
+            asset.setCategory(assetDetails.category());
+            asset.setSerialNumber(asset.getSerialNumber());
+            asset.setAcquisitionDate(assetDetails.acquisitionDate());
+            asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
+            asset.setLocation(assetDetails.location());
+            asset.setCondition(assetDetails.condition());
+            asset.setStatus(AssetStatus.AVAILABLE);
+            asset.setPhotoPath(assetDetails.path());
 
-        assetRepository.save(asset);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("ASSET IS LOANED. CANNOT EDIT!");
+        }
+
+
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
@@ -342,8 +347,6 @@ public class AssetService {
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
-        } catch (Exception e) {
-            throw e;
         }
     }
 
@@ -362,10 +365,11 @@ public class AssetService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("title").ascending());
 
         // 1. Grab the active security session details
-        @Nullable Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        assert auth != null;
         boolean isAdminOrManager = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+                .anyMatch(a -> Objects.equals(a.getAuthority(), "ROLE_ADMIN") || Objects.equals(a.getAuthority(), "ROLE_MANAGER"));
 
         Page<Asset> assetPage;
 

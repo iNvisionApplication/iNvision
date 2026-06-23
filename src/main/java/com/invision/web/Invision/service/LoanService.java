@@ -23,11 +23,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -338,6 +341,16 @@ public class LoanService {
         }
 
         return loans.map(loanMapper::loanToLoanResponseDTO);
+    }
+    @PreAuthorize("hasRole('ROLE_MANAGER')")
+    public org.springframework.data.domain.Page<LoanResponseDTO> getDepartmentLoans(int page, int size) {
+        User manager = getAuthenticatedUser();
+
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("requestDate").descending());
+
+        return loanRepository.findByUserDepartment(manager.getDepartment(), pageable)
+                .map(loanMapper::loanToLoanResponseDTO);
     }
 
     // Add this endpoint method inside LoanService.java
