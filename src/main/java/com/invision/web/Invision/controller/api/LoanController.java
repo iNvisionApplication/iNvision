@@ -62,6 +62,14 @@ public class LoanController {
         );
     }
 
+    @GetMapping("/department")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+    public ResponseEntity<org.springframework.data.domain.Page<LoanResponseDTO>> getDepartmentLoans(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(loanService.getDepartmentLoans(page, size));
+    }
+
     @GetMapping("/overdue")
     public ResponseEntity<List<LoanResponseDTO>> getAllOverdueLoans(){
         return ResponseEntity.ok(loanService.getAllOverdueLoans());

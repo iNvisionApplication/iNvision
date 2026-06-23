@@ -2,6 +2,7 @@ package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.enums.*;
+import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
@@ -9,12 +10,13 @@ import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.mapper.AssetMapper;
 import com.invision.web.Invision.model.Asset;
 
+import com.invision.web.Invision.repository.LoanRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.jspecify.annotations.Nullable;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,8 +33,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class AssetService {
 
+    private final LoanRepository loanRepository;
     private final AssetRepository assetRepository;
     private final AssetMapper assetMapper;
     private final AuditLogService auditLogService;
@@ -53,23 +56,29 @@ public class AssetService {
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        asset.setTitle(assetDetails.title());
-        asset.setCategory(assetDetails.category());
-        asset.setSerialNumber(assetDetails.serialNumber());
-        asset.setAcquisitionDate(assetDetails.acquisitionDate());
-        asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
-        asset.setLocation(assetDetails.location());
-        asset.setCondition(assetDetails.condition());
-        asset.setStatus(AssetStatus.AVAILABLE);
-        asset.setPhotoPath(assetDetails.path());
+        if(asset.getStatus()==AssetStatus.AVAILABLE){
+            asset.setTitle(assetDetails.title());
+            asset.setCategory(assetDetails.category());
+            asset.setSerialNumber(asset.getSerialNumber());
+            asset.setAcquisitionDate(assetDetails.acquisitionDate());
+            asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
+            asset.setLocation(assetDetails.location());
+            asset.setCondition(assetDetails.condition());
+            asset.setStatus(AssetStatus.AVAILABLE);
+            asset.setPhotoPath(assetDetails.path());
 
-        assetRepository.save(asset);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("ASSET IS LOANED. CANNOT EDIT!");
+        }
+
+
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
@@ -79,12 +88,32 @@ public class AssetService {
     }
 
     // Retire an Asset
-    public void retireAsset(Long assetId){
+    public void retireAsset(Long assetId) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldStatus = String.valueOf(asset.getStatus());
-        asset.setStatus(AssetStatus.RETIRED);
+
+        if (asset.getStatus() == AssetStatus.AVAILABLE) {
+            asset.setStatus(AssetStatus.RETIRED);
+
+            // Find all pending loans associated with this specific asset
+            List<Loan> loanList = loanRepository.findByAssetAssetIdAndStatus(asset.getAssetId(), LoanStatus.PENDING);
+
+            // Process and reject every open request safely
+            loanList.forEach(loan -> {
+                loan.setStatus(LoanStatus.REJECTED);
+                loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED); // Keeps your handoff tracking in sync
+            });
+
+            // Save the cascading states back to your DB context rules
+            loanRepository.saveAll(loanList);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("Asset is Loaned or Retired!!");
+        }
+
+
         assetRepository.save(asset);
 
         auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId,oldStatus, "Status: Retired");
@@ -308,8 +337,6 @@ public class AssetService {
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
-        } catch (Exception e) {
-            throw e;
         }
     }
 
@@ -328,10 +355,11 @@ public class AssetService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("title").ascending());
 
         // 1. Grab the active security session details
-        @Nullable Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        assert auth != null;
         boolean isAdminOrManager = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"));
+                .anyMatch(a -> Objects.equals(a.getAuthority(), "ROLE_ADMIN") || Objects.equals(a.getAuthority(), "ROLE_MANAGER"));
 
         Page<Asset> assetPage;
 
