@@ -15,7 +15,9 @@ function switchReportTab(targetTab) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
     document.getElementById(`${targetTab}TabPanel`).style.display = 'block';
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -55,11 +57,11 @@ function generateInventoryReport() {
                 `;
                 tbody.appendChild(row);
             });
-        }).catch(() => alert("Could not fetch inventory metrics."));
+        }).catch(() => showErrorModal("Data Extract Error", "Could not fetch inventory compilation metrics from metrics databases."));
 }
 
 function exportInventoryCSV() {
-    if (activeInventoryData.length === 0) return alert("Generate a report dataset before exporting data.");
+    if (activeInventoryData.length === 0) return showErrorModal("Export Blocked", "Generate a valid filtering report dataset before attempting to run spreadsheet compilation downloads.");
 
     const headers = ["Asset ID", "Title", "Category", "Serial Number", "Location", "Condition", "Cost (ZAR)", "Status"];
     const rows = activeInventoryData.map(a => [
@@ -73,7 +75,6 @@ function exportInventoryCSV() {
 // 2. LOAN HISTORY INTERACTION LOGIC (UPGRADED)
 // ─────────────────────────────────────────────────────────────────────────
 function generateLoanReport() {
-    // 1. Grab target elements and preserve initial text state
     const submitBtn = document.getElementById("loanSubmitBtn");
     const originalText = submitBtn.innerHTML;
 
@@ -87,7 +88,6 @@ function generateLoanReport() {
                      `&department=${department}` +
                      `&status=${status}`;
 
-    // 2. Trigger loading loop state mutations
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span class="btn-spinner"></span> Loading loans...`;
 
@@ -98,8 +98,7 @@ function generateLoanReport() {
             const tbody = document.querySelector("#loanTable tbody");
 
             if (!tbody) {
-                console.error("DOM Error: Could not find '#loanTable tbody'. Check your dashboard.html file.");
-                alert("UI Layout Error: Loan table container is missing.");
+                showErrorModal("UI Layout Error", "Loan table presentation structural node container is missing inside DOM layouts.");
                 return;
             }
 
@@ -127,17 +126,16 @@ function generateLoanReport() {
         })
         .catch(err => {
             console.error("Fetch error:", err);
-            alert("Could not isolate historical loan matrix.");
+            showErrorModal("Data Compilation Failed", "Could not isolate target tracking components inside historical loan matrix logs.");
         })
         .finally(() => {
-            // 3. Re-enable button interaction and tear down loader elements
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         });
 }
 
 function exportLoanCSV() {
-    if (activeLoanData.length === 0) return alert("Generate history matrix records before executing data downloads.");
+    if (activeLoanData.length === 0) return showErrorModal("Export Denied", "Generate history matrix report blocks before executing spreadsheets downloads streams.");
 
     const headers = ["Loan ID", "Asset Title", "Borrower Email", "Department", "Request Date", "Due Date", "Return Date", "Status"];
     const rows = activeLoanData.map(l => [
@@ -177,11 +175,11 @@ function generateOverdueReport() {
                 `;
                 tbody.appendChild(row);
             });
-        }).catch(() => alert("Could not parse overdue inventory checks."));
+        }).catch(() => showErrorModal("Data Parse Interruption", "Could not complete parsing configurations for overdue tracking arrays."));
 }
 
 function exportOverdueCSV() {
-    if (activeOverdueData.length === 0) return alert("No operational parameters isolated to structure overdue sheets.");
+    if (activeOverdueData.length === 0) return showErrorModal("Export Blocked", "No risk configuration metrics have been isolated yet to generate overdue structural layouts.");
 
     const headers = ["Loan ID", "Asset Title", "Borrower Email", "Checkout Date", "Expected Due Date", "Status"];
     const rows = activeOverdueData.map(o => [
@@ -218,6 +216,7 @@ function streamCsvBlob(filenamePrefix, headers, rows) {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
+
 // ─────────────────────────────────────────────────────────────────────────
 // SECURITY AUDIT TRAIL EXTRACTION ENGINE
 // ─────────────────────────────────────────────────────────────────────────
@@ -226,51 +225,42 @@ function triggerAuditTrailExtraction() {
     const entityType = document.getElementById("auditFilterEntityType").value;
     const originalText = extractBtn.innerHTML;
 
-    // Capture security validation metadata from Thymeleaf layout boundaries
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
-    // Lock interaction and trigger button loading state
     extractBtn.disabled = true;
     extractBtn.innerHTML = `<span class="btn-spinner"></span> Extracting Matrix...`;
 
-    // Direct path targeting your new transactional API endpoint
     const queryUrl = `/api/audit-logs/extract?entityType=${entityType}`;
 
     fetch(queryUrl, {
         method: "GET",
-        headers: {
-            [header]: token // Standard security verification handshake
-        }
+        headers: { [header]: token }
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) {
-            if (response.status === 403) throw new Error("Security Violation: Access Denied.");
-            throw new Error("Internal server fault during log generation.");
+            if (response.status === 403) throw new Error("Security Violation: Administrative clearance required.");
+            throw new Error("Internal execution failure compiling audit trail logging file blocks.");
         }
         return response.json();
     })
     .then(data => {
         if (data.length === 0) {
-            alert("No audit logs found matching the selected transaction module.");
+            showErrorModal("Empty Dataset", "No security logs matching the chosen module configuration are present to construct sheets.");
             return;
         }
 
-        // Define clean, business-friendly columns for the spreadsheet
         const headers = ["Log ID", "Operator Email", "Module Affected", "Target Record ID", "Action Executed", "Details / Changes", "Timestamp Metric"];
-
-        // Map the server DTO records into compliant CSV string lines
         const rows = data.map(log => [
             log.logId,
             log.operatorEmail,
             log.entityType,
             log.entityId || "SYSTEM",
             log.action,
-            `"${(log.details || "").replace(/"/g, '""')}"`, // Safely sanitizes quotes/commas inside descriptions
+            `"${(log.details || "").replace(/"/g, '""')}"`,
             formatTimestamp(log.timestamp)
         ]);
 
-        // Compile and stream the text data directly to the user's browser storage
         const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -284,14 +274,13 @@ function triggerAuditTrailExtraction() {
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         document.body.removeChild(downloadAnchor);
-        URL.revokeObjectURL(url); // Free up browser allocation resources immediately
+        URL.revokeObjectURL(url);
     })
     .catch(error => {
         console.error("Audit extraction breakdown:", error);
-        alert("Extraction Refused: " + error.message);
+        showErrorModal("Extraction Aborted", error.message);
     })
     .finally(() => {
-        // Unlock button element and restore state layout natively
         extractBtn.disabled = false;
         extractBtn.innerHTML = originalText;
     });

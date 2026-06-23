@@ -1,45 +1,41 @@
-
 // Add these pagination trackers to the top of your script
 let currentAssetsPage = 0;
 let currentLoansPage = 0;
+
 function getAssetsPageSize() {
     const width = window.innerWidth;
-
     if (width >= 1600) return 10;
     if (width >= 1300) return 8;
     if (width >= 1000) return 6;
     return 4;
-} // Dynamically fit dimensions in use
+}
+
 function getLoansPageSize() {
     const width = window.innerWidth;
-
     if (width >= 1400) return 12;
     if (width >= 1100) return 9;
     if (width >= 768) return 6;
     return 4;
 }
+
 let assetSearchTimeout = null;
 
 document.addEventListener("DOMContentLoaded", function () {
-
-// 1. Check for incoming success parameters from incoming redirects
+    // 1. Check for incoming success parameters from incoming redirects
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("success") === "true") {
         const message = urlParams.get("msg") || "Action processed successfully.";
-
-        // Spawn the dynamic toast
         showToast(message);
-
-        // Clean up the browser URL string so the params vanish without reloading the page
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // If we are on the edit page, automatically pre-load the asset's current data profiles
+    // If we are on the edit page, pre-load the asset's current data profiles
     if (document.getElementById("updateAssetForm")) {
         prefillAssetDataFields();
         document.getElementById("updateAssetForm").addEventListener("submit", submitAssetUpdate);
     }
-   // Bind CSV Template Downloader
+
+    // Bind CSV Template Downloader
     const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
     if (downloadTemplateBtn) {
         downloadTemplateBtn.addEventListener("click", downloadCSVTemplate);
@@ -51,11 +47,12 @@ document.addEventListener("DOMContentLoaded", function () {
          manualAssetForm.addEventListener("submit", submitManualAsset);
     }
 
-       // Bind Bulk CSV Import Form
+    // Bind Bulk CSV Import Form
     const bulkUploadForm = document.getElementById("bulkUploadForm");
     if (bulkUploadForm) {
           bulkUploadForm.addEventListener("submit", submitBulkImport);
     }
+
     setupDueDateLimit();
 
     if (document.getElementById("loanHistoryBody")) {
@@ -76,34 +73,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const mobileBackdrop = document.getElementById("mobileBackdrop");
 
     if (mobileMenuBtn && sidebar && mobileBackdrop) {
-
         mobileMenuBtn.addEventListener("click", function () {
-
             sidebar.classList.toggle("open");
             mobileBackdrop.classList.toggle("show");
-
             const isOpen = sidebar.classList.contains("open");
-
-            mobileMenuBtn.setAttribute(
-                "aria-expanded",
-                isOpen ? "true" : "false"
-            );
+            mobileMenuBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
         });
 
         mobileBackdrop.addEventListener("click", function () {
-
             sidebar.classList.remove("open");
             mobileBackdrop.classList.remove("show");
-
-            mobileMenuBtn.setAttribute(
-                "aria-expanded",
-                "false"
-            );
+            mobileMenuBtn.setAttribute("aria-expanded", "false");
         });
     }
 
     const loanRequestForm = document.getElementById("loanRequestForm");
-
     if (loanRequestForm) {
         loanRequestForm.addEventListener("submit", submitLoanRequest);
     }
@@ -132,8 +116,7 @@ function getCurrentUserRole() {
 }
 
 function loadUserLoans(pageNumber) {
-
-if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
+    if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         pageNumber = 0;
     }
     currentLoansPage = pageNumber;
@@ -146,21 +129,15 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
 
     if (!tableBody) return;
 
-    // ─── UPDATE THIS ROUTING SEGMENT INSIDE YOUR loadUserLoans(pageNumber) FUNCTION ───
-
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
-
         if (statusFilter === "PENDING") {
             url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
         } else if (role === "MANAGER") {
-            // ⚡ NEW ROUTE: Limits a manager's timeline strictly to their own operational department
             url = `/api/loans/department?page=${pageNumber}&size=${getLoansPageSize()}`;
         } else {
-            // ADMIN profiles fall through here to view global logs across all modules
             url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
         }
-
     } else {
         if (!userId) return;
         url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
@@ -175,14 +152,8 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
         })
         .then(pageData => {
             const loans = Array.isArray(pageData) ? pageData : pageData.content;
-
-            const totalPages = pageData.page
-                ? pageData.page.totalPages
-                : (pageData.totalPages || 1);
-
-            const currentPage = pageData.page
-                ? pageData.page.number
-                : (pageData.number || 0);
+            const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 1);
+            const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
 
             tableBody.innerHTML = "";
 
@@ -192,7 +163,6 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                 return;
             }
 
-            // Replace the row rendering block inside your loop inside loadUserLoans(pageNumber)
             loans.forEach(loan => {
                 const row = document.createElement("tr");
                 let actionsHtml = "";
@@ -206,7 +176,6 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
                         actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
                     }
                 } else {
-                    // BORROWER SELECTIONS
                     if (loan.status === "APPROVED" && loan.assetLoanStatus === "PENDING_COLLECTION") {
                         actionsHtml = `<button class="btn btn-sm btn-steel" onclick="executeLoanAction(${loan.loanId}, 'collect')">Confirm Collection</button>`;
                     } else if (loan.status === "APPROVED" && loan.assetLoanStatus === "COLLECTED") {
@@ -240,34 +209,23 @@ if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
 }
 
 async function approveLoan(loanId) {
-
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     try {
-
         const response = await fetch(`/api/loans/${loanId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
                 [header]: token
             },
-            body: JSON.stringify({
-                loanStatus: "APPROVED"
-            })
+            body: JSON.stringify({ loanStatus: "APPROVED" })
         });
 
-        if (!response.ok) {
-            throw new Error();
-        }
-
+        if (!response.ok) throw new Error();
         loadUserLoans(currentLoansPage);
-
     } catch (error) {
-        showErrorModal(
-            "Approval Failed",
-            "Unable to approve this loan request."
-        );
+        showErrorModal("Approval Failed", "Unable to approve this loan request.");
     }
 }
 
@@ -313,17 +271,15 @@ function submitLoanRequest(event) {
     })
         .then(async response => {
             const responseText = await response.text();
-
             if (!response.ok) {
                 let errorData;
                 try {
                     errorData = JSON.parse(responseText);
                 } catch (e) {
-                    errorData = { message: responseText || `Status ${response.status}: Server encountered an operational failure.` };
+                    errorData = { message: responseText || `Status ${response.status}: Server operational failure.` };
                 }
                 throw errorData;
             }
-
             return responseText ? JSON.parse(responseText) : {};
         })
         .then(() => {
@@ -331,15 +287,9 @@ function submitLoanRequest(event) {
         })
         .catch(error => {
             if (error.code === "BAD_LOAN_REQUEST") {
-                showErrorModal(
-                    "Active Request Found",
-                    "You already have a pending or active loan for this asset. Please track its approval progress via your dashboard timeline."
-                );
+                showErrorModal("Active Request Found", "You already have a pending or active loan for this asset.");
             } else {
-                showErrorModal(
-                    "Submission Refused",
-                    error.message || "An unresolved network transmission layout conflict has occurred."
-                );
+                showErrorModal("Submission Refused", error.message || "An unresolved network transmission layout conflict has occurred.");
             }
         });
 }
@@ -357,7 +307,7 @@ function executeLoanAction(loanId, actionEndpoint) {
     })
     .then(response => {
         if (!response.ok) throw new Error("Operational transformation state rejected by server rules.");
-        loadUserLoans(currentLoansPage); // Refresh the active table frame dynamically
+        loadUserLoans(currentLoansPage);
     })
     .catch(error => {
         console.error("Workflow transmission failure:", error);
@@ -375,10 +325,8 @@ function searchAllAssets() {
     if (!input || !container) return;
 
     clearTimeout(assetSearchTimeout);
-
     assetSearchTimeout = setTimeout(() => {
         const searchText = input.value.trim().toLowerCase();
-
         if (!searchText) {
             loadAvailableAssets(0);
             return;
@@ -388,33 +336,22 @@ function searchAllAssets() {
             .then(response => response.json())
             .then(pageData => {
                 const assets = pageData.content || [];
-
                 const filteredAssets = assets.filter(asset => {
                     const searchableText = `
-                        ${asset.title || ""}
-                        ${asset.serialNumber || ""}
-                        ${asset.category || ""}
-                        ${asset.condition || ""}
-                        ${asset.location || ""}
-                        ${asset.status || ""}
+                        ${asset.title || ""} ${asset.serialNumber || ""} ${asset.category || ""}
+                        ${asset.condition || ""} ${asset.location || ""} ${asset.status || ""}
                     `.toLowerCase();
-
                     return searchableText.includes(searchText);
                 });
 
                 renderAssetSearchResults(filteredAssets);
-
-                if (assetCount) {
-                    assetCount.innerText = `${filteredAssets.length} result(s) found`;
-                }
-
+                if (assetCount) assetCount.innerText = `${filteredAssets.length} result(s) found`;
                 removePaginationControls("assetsPaginationControls");
             })
             .catch(error => {
                 console.error("Asset search failed:", error);
                 showErrorModal("Search Failed", "Unable to search assets right now.");
             });
-
     }, 250);
 }
 
@@ -424,61 +361,43 @@ function renderAssetSearchResults(assets) {
     const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
     if (!container) return;
-
     container.innerHTML = "";
 
     if (!assets || assets.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>No matching assets</h3>
-                <p>Try a different title, serial number, category, condition, or location.</p>
-            </div>
-        `;
+                <p>Try a different criteria description mapping matrix entry.</p>
+            </div>`;
         return;
     }
 
     assets.forEach(asset => {
         const card = document.createElement("div");
         card.className = "asset-card";
-
         const imagePath = getAssetImagePath(asset.photoPath);
         const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
 
         const actionButton = isLoaned
-            ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
-                    ${asset.title || "Untitled Asset"} (Borrowed)
-               </button>`
-            : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
-                    ${asset.title || "Untitled Asset"}
-               </button>`;
+            ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>${asset.title || "Untitled"} (Borrowed)</button>`
+            : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">${asset.title || "Untitled"}</button>`;
 
         card.innerHTML = `
             <div class="asset-image-wrap">
-                <img src="${imagePath}"
-                     alt="Asset Photo"
-                     class="asset-img"
-                     onerror="this.onerror=null; this.src='/uploads/macbook.png';">
+                <img src="${imagePath}" alt="Asset Photo" class="asset-img" onerror="this.onerror=null; this.src='/uploads/macbook.png';">
                 ${getAssetStatusBadge(asset.status)}
             </div>
-
             <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
                 ${actionButton}
-                ${isAdminOrManager ? `
-                    <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
-                        ⚙️ Edit
-                    </a>
-                ` : ''}
+                ${isAdminOrManager ? `<a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">⚙️ Edit</a>` : ''}
             </div>
-
             <div class="asset-meta">
                 <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
                 <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>
                 <p><strong>Condition</strong><span>${asset.condition || "N/A"}</span></p>
                 <p><strong>Location</strong><span>${asset.location || "N/A"}</span></p>
                 <p><strong>Cost</strong><span>R${asset.cost || "0.00"}</span></p>
-            </div>
-        `;
-
+            </div>`;
         container.appendChild(card);
     });
 }
@@ -499,11 +418,9 @@ function showErrorModal(title, message) {
 
 function submitManualAsset(event) {
     event.preventDefault();
-
     const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
-    // Gather text values to match your backend AssetRequestDTO fields
     const assetPayload = {
         title: document.getElementById("title").value,
         serialNumber: document.getElementById("serialNumber").value,
@@ -512,8 +429,6 @@ function submitManualAsset(event) {
         location: document.getElementById("location").value,
         cost: Number(document.getElementById("cost").value),
         path: document.getElementById("path").value,
-
-        // Generates today's date dynamically in YYYY-MM-DD format
         acquisitionDate: new Date().toISOString().slice(0, 19)
     };
 
@@ -526,33 +441,36 @@ function submitManualAsset(event) {
         body: JSON.stringify(assetPayload)
     })
     .then(async response => {
+        const errorText = await response.text();
         if (response.ok) {
-            alert("Asset registered successfully!");
-            window.location.href = "/assets";
+            showToast("Asset registered successfully!");
+            setTimeout(() => window.location.href = "/assets", 1500);
         } else {
-            const errorText = await response.text();
-            alert("Failed to save asset: " + errorText);
+            try {
+                const errorJson = JSON.parse(errorText);
+                showErrorModal("Registration Refused", errorJson.message || errorText);
+            } catch(e) {
+                showErrorModal("Registration Refused", errorText);
+            }
         }
     })
     .catch(error => {
         console.error("Error saving asset:", error);
-        alert("An error occurred while connecting to the server.");
+        showErrorModal("Network Interruption", "An error occurred while executing data synchronization with the server.");
     });
 }
 
 function submitBulkImport(event) {
     event.preventDefault();
-
     const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     const fileInput = document.getElementById("csvFile");
     if (!fileInput.files.length) {
-        alert("Please select a valid CSV manifest file first.");
+        showErrorModal("Selection Error", "Please select a valid CSV manifest file first.");
         return;
     }
 
-    // Wrap the file inside a multi-part boundary form container
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
 
@@ -562,30 +480,32 @@ function submitBulkImport(event) {
 
     fetch("/api/assets/import", {
         method: "POST",
-        headers: {
-            [csrfHeader]: csrfToken // Send security token, but omit Content-Type entirely!
-        },
+        headers: { [csrfHeader]: csrfToken },
         body: formData
     })
     .then(async response => {
         const message = await response.text();
         if (response.ok) {
-            alert("Bulk Processing Complete: " + message);
-            window.location.href = "/dashboard";
+            showToast("Bulk Processing Complete: " + message);
+            setTimeout(() => window.location.href = "/dashboard", 1500);
         } else {
-            alert("Import Rejected: " + message);
+            try {
+                const errorJson = JSON.parse(message);
+                showErrorModal("Import Rejected", errorJson.message || message);
+            } catch(e) {
+                showErrorModal("Import Rejected", message);
+            }
             executeBulkBtn.disabled = false;
             executeBulkBtn.textContent = "Process Spreadsheet Manifest";
         }
     })
     .catch(error => {
         console.error("Error executing bulk upload:", error);
-        alert("A connectivity drop or internal error stopped your bulk manifest import.");
+        showErrorModal("Data Drop Detected", "A connectivity drop or internal error stopped your bulk manifest import.");
         executeBulkBtn.disabled = false;
         executeBulkBtn.textContent = "Process Spreadsheet Manifest";
     });
 }
-
 
 function loadAvailableAssets(pageNumber) {
     if (typeof pageNumber !== 'number' || isNaN(pageNumber)) {
@@ -597,19 +517,15 @@ function loadAvailableAssets(pageNumber) {
 
     if (!container) return;
 
-    // Resolve current logged-in role matrix state context
     const role = document.getElementById("currentUserRole")?.value || "BORROWER";
     const isAdminOrManager = role === "ADMIN" || role === "MANAGER";
 
     fetch(`/api/assets?page=${pageNumber}&size=${getAssetsPageSize()}`)
         .then(async response => {
-            if (!response.ok) {
-                throw new Error(`Server returned status ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Server returned status ${response.status}`);
             return response.json();
         })
         .then(pageData => {
-            // Safe unpacking extraction for both standard and VIA_DTO page structures
             const assets = pageData.content;
             const totalPages = pageData.page ? pageData.page.totalPages : (pageData.totalPages || 0);
             const currentPage = pageData.page ? pageData.page.number : (pageData.number || 0);
@@ -618,12 +534,7 @@ function loadAvailableAssets(pageNumber) {
             container.innerHTML = "";
 
             if (!Array.isArray(assets) || assets.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No available assets</h3>
-                        <p>There are currently no assets available for loan.</p>
-                    </div>
-                `;
+                container.innerHTML = `<div class="empty-state"><h3>No available assets</h3></div>`;
                 if (assetCount) assetCount.innerText = "0 assets";
                 removePaginationControls("assetsPaginationControls");
                 return;
@@ -634,53 +545,33 @@ function loadAvailableAssets(pageNumber) {
             assets.forEach(asset => {
                 const card = document.createElement("div");
                 card.className = "asset-card";
-
                 const imagePath = getAssetImagePath(asset.photoPath);
-
                 const isLoaned = asset.status && asset.status.toUpperCase() === "LOANED";
 
-
                 const actionButton = isLoaned
-                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>
-                            ${asset.title || "Untitled Asset"} (Borrowed)
-                       </button>`
-                    : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">
-                            ${asset.title || "Untitled Asset"}
-                       </button>`;
+                    ? `<button type="button" class="asset-title-btn disabled-action" style="cursor: not-allowed; opacity: 0.7; flex: 1; text-align: left;" disabled>${asset.title || "Untitled Asset"} (Borrowed)</button>`
+                    : `<button type="button" class="asset-title-btn" style="flex: 1; text-align: left;" onclick="openLoanPanel('${asset.assetId}', '${escapeText(asset.title)}')">${asset.title || "Untitled Asset"}</button>`;
 
                 card.innerHTML = `
                     <div class="asset-image-wrap">
-                        <img src="${imagePath}"
-                             alt="Asset Photo"
-                             class="asset-img"
-                             onerror="this.onerror=null; this.src='/uploads/macbook.png';">
+                        <img src="${imagePath}" alt="Asset" class="asset-img" onerror="this.onerror=null; this.src='/uploads/macbook.png';">
                         ${getAssetStatusBadge(asset.status)}
                     </div>
-
                     <div class="asset-action-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 16px; gap: 8px;">
                         ${actionButton}
-                        ${isAdminOrManager ? `
-                            <a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
-                                ⚙️ Edit
-                            </a>
-                        ` : ''}
+                        ${isAdminOrManager ? `<a href="/assets/edit/${asset.assetId}" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">⚙️ Edit</a>` : ''}
                     </div>
-
                     <div class="asset-meta">
                         <p><strong>Serial Number</strong><span>${asset.serialNumber || "N/A"}</span></p>
                         <p><strong>Category</strong><span>${asset.category || "N/A"}</span></p>
                         <p><strong>Condition</strong><span>${asset.condition || "N/A"}</span></p>
                         <p><strong>Location</strong><span>${asset.location || "N/A"}</span></p>
                         <p><strong>Cost</strong><span>R${asset.cost || "0.00"}</span></p>
-                    </div>
-                `;
-
+                    </div>`;
                 container.appendChild(card);
             });
-            //fix pagination placement for mobile
 
             const loanPanel = document.getElementById("loanRequestPanel");
-
             if (loanPanel) {
                 buildPaginationControls("assetsPaginationControls", loanPanel, totalPages, currentPage, loadAvailableAssets);
             } else {
@@ -713,22 +604,16 @@ function openLoanPanel(assetId, assetTitle) {
 
 function closeLoanPanel() {
     const panel = document.getElementById("loanRequestPanel");
-    if (panel) {
-        panel.classList.add("hidden");
-    }
+    if (panel) panel.classList.add("hidden");
 }
 
 async function loadUsers() {
     const tbody = document.getElementById("usersTableBody");
-
     if (!tbody) return;
 
     try {
         const response = await fetch("/api/users");
-
-        if (!response.ok) {
-            throw new Error(`Server returned status ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Server returned status ${response.status}`);
 
         const users = await response.json();
         tbody.innerHTML = "";
@@ -747,25 +632,11 @@ async function loadUsers() {
                     <td>${user.department || "-"}</td>
                     <td>${user.role || "N/A"}</td>
                     <td class="user-actions">
-                        <button
-                         type="button"
-                         class="btn-edit-user"
-                         onclick='openEditUserModal(${JSON.stringify(user)})'>
-                         Edit
-                         </button>
-
-                         <button
-                         type="button"
-                         class="${user.active ? 'btn-deactivate-user' : 'btn-activate-user'}"
-                         onclick="toggleUserStatus(${user.userId}, ${user.active})">
-
-                         ${user.active ? 'Deactivate' : 'Activate'}
-                         </button>
+                        <button type="button" class="btn-edit-user" onclick='openEditUserModal(${JSON.stringify(user)})'>Edit</button>
+                        <button type="button" class="${user.active ? 'btn-deactivate-user' : 'btn-activate-user'}" onclick="toggleUserStatus(${user.userId}, ${user.active})">${user.active ? 'Deactivate' : 'Activate'}</button>
                     </td>
-                </tr>
-            `;
+                </tr>`;
         });
-
     } catch (error) {
         console.error("Error loading users:", error);
         tbody.innerHTML = `<tr><td colspan="6">Failed to load users</td></tr>`;
@@ -775,7 +646,6 @@ async function loadUsers() {
 
 async function toggleUserStatus(userId, isActive) {
     const action = isActive ? "deactivate" : "activate";
-
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
 
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
@@ -784,51 +654,34 @@ async function toggleUserStatus(userId, isActive) {
     try {
         const response = await fetch(`/api/users/${userId}/${action}`, {
             method: "PATCH",
-            headers: {
-                [header]: token
-            }
+            headers: { [header]: token }
         });
-
-        if (!response.ok) {
-            throw new Error(`Server returned status ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Server status ${response.status}`);
         loadUsers();
-
     } catch (error) {
         console.error(error);
-        showErrorModal("Action Failed", `Failed to ${action} user.`);
+        showErrorModal("Action Aborted", `Failed to execute ${action} user operation parameters.`);
     }
 }
 
 function openEditUserModal(user) {
-
     document.getElementById("editUserId").value = user.userId;
     document.getElementById("editName").value = user.name || "";
     document.getElementById("editEmail").value = user.email || "";
     document.getElementById("editDepartment").value = user.department || "";
     document.getElementById("editRole").value = user.role || "";
-
-    document.getElementById("editUserModal")
-        .classList.remove("hidden");
+    document.getElementById("editUserModal").classList.remove("hidden");
 }
 
 function closeEditUserModal() {
-    document.getElementById("editUserModal")
-        .classList.add("hidden");
+    document.getElementById("editUserModal").classList.add("hidden");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-
     const editForm = document.getElementById("editUserForm");
     const addAdminForm = document.getElementById("addAdminForm");
-
-    if (editForm) {
-        editForm.addEventListener("submit", saveUserChanges);
-    }
-    if (addAdminForm) {
-        addAdminForm.addEventListener("submit", createAdminUser);
-    }
+    if (editForm) editForm.addEventListener("submit", saveUserChanges);
+    if (addAdminForm) addAdminForm.addEventListener("submit", createAdminUser);
 });
 
 function openAddAdminModal() {
@@ -842,7 +695,6 @@ function closeAddAdminModal() {
 
 async function createAdminUser(event) {
     event.preventDefault();
-
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
@@ -863,31 +715,20 @@ async function createAdminUser(event) {
             },
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            throw new Error(`Server returned status ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Server returned status ${response.status}`);
 
         closeAddAdminModal();
         loadUsers();
-
-        showErrorModal(
-            "Admin Created",
-            "New admin created successfully. They must reset their password on first login."
-        );
-
+        showErrorModal("Admin Created", "New admin created successfully. They must reset their password on first login.");
     } catch (error) {
         console.error("Error creating admin:", error);
-        showErrorModal("Creation Failed", "Failed to create new admin user.");
+        showErrorModal("Creation Failed", "Failed to create new admin user identity registry profile inside database bounds.");
     }
 }
 
 async function saveUserChanges(event) {
-
     event.preventDefault();
-
     const userId = document.getElementById("editUserId").value;
-
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
@@ -899,7 +740,6 @@ async function saveUserChanges(event) {
     };
 
     try {
-
         const response = await fetch(`/api/users/${userId}`, {
             method: "PUT",
             headers: {
@@ -908,34 +748,20 @@ async function saveUserChanges(event) {
             },
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            throw new Error();
-        }
-
+        if (!response.ok) throw new Error();
         closeEditUserModal();
         loadUsers();
-
     } catch (error) {
-        showErrorModal(
-            "Update Failed",
-            "Unable to update user information."
-        );
+        showErrorModal("Update Failed", "Unable to update user structural account configuration settings.");
     }
 }
 
 // ================= HELPERS =================
 
 function getAssetImagePath(path) {
-    if (!path || path === "string" || path === "url_photo") {
-        return "/images/no-image.png";
-    }
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-        return path;
-    }
-    if (path.startsWith("/")) {
-        return path;
-    }
+    if (!path || path === "string" || path === "url_photo") return "/images/no-image.png";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    if (path.startsWith("/")) return path;
     return "/uploads/" + path;
 }
 
@@ -975,15 +801,12 @@ function escapeText(text) {
 
 function extendUserSession() {
     clearInterval(countdownInterval);
-
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
     fetch('/api/auth/keep-alive', {
         method: 'GET',
-        headers: {
-            [header]: token
-        }
+        headers: { [header]: token }
     })
     .then(response => {
         if (response.ok) {
@@ -1014,38 +837,20 @@ function buildPaginationControls(controlsId, targetSibling, totalPages, currentP
     }
 
     let htmlContent = `<ul class="pagination-list">`;
-
-    htmlContent += `
-        <li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
-            <button class="page-link" type="button" data-page="${currentPage - 1}">Previous</button>
-        </li>
-    `;
+    htmlContent += `<li class="page-item ${currentPage === 0 ? 'disabled' : ''}"><button class="page-link" type="button" data-page="${currentPage - 1}">Previous</button></li>`;
 
     for (let i = 0; i < totalPages; i++) {
-        htmlContent += `
-            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                <button class="page-link" type="button" data-page="${i}">${i + 1}</button>
-            </li>
-        `;
+        htmlContent += `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" type="button" data-page="${i}">${i + 1}</button></li>`;
     }
 
-    htmlContent += `
-        <li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
-            <button class="page-link" type="button" data-page="${currentPage + 1}">Next</button>
-        </li>
-    `;
-
-    htmlContent += `</ul>`;
+    htmlContent += `<li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}"><button class="page-link" type="button" data-page="${currentPage + 1}">Next</button></li></ul>`;
     controlsContainer.innerHTML = htmlContent;
 
     controlsContainer.querySelectorAll(".page-link").forEach(button => {
         button.addEventListener("click", function () {
             const TargetPage = parseInt(this.getAttribute("data-page"));
             const parentLi = this.parentElement;
-
-            if (parentLi.classList.contains("disabled") || parentLi.classList.contains("active")) {
-                return;
-            }
+            if (parentLi.classList.contains("disabled") || parentLi.classList.contains("active")) return;
             navigationCallback(TargetPage);
         });
     });
@@ -1053,63 +858,33 @@ function buildPaginationControls(controlsId, targetSibling, totalPages, currentP
 
 function removePaginationControls(controlsId) {
     const controlsContainer = document.getElementById(controlsId);
-    if (controlsContainer) {
-        controlsContainer.remove();
-    }
+    if (controlsContainer) controlsContainer.remove();
 }
 
 function downloadCSVTemplate(event) {
     event.preventDefault();
+    const headers = ["title", "category", "serial_number", "acquisition_date", "cost", "location", "condition", "status", "photo_path"];
+    const sampleRow = ["MacBook Pro 16-inch M4", "AUDIO", "SN-INV778899", "2026-06-18 10:00:00", "45000.00", "AdminOffice", "GOOD", "AVAILABLE", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8"];
 
-    // 1. Define the exact headers your Apache Commons CSV parser expects
-    const headers = [
-        "title",
-        "category",
-        "serial_number",
-        "acquisition_date",
-        "cost",
-        "location",
-        "condition",
-        "status",
-        "photo_path"
-    ];
-
-    // 2. Supply an explicit baseline reference row to guide data entry
-    const sampleRow = [
-        "MacBook Pro 16-inch M4",
-        "AUDIO",
-        "SN-INV778899",
-        "2026-06-18 10:00:00", // Matches your exact backend 'yyyy-MM-dd HH:mm:ss' formatter
-        "45000.00",
-        "AdminOffice",        // Matches your capitalized Java Enum location
-        "GOOD",               // Matches upper-case condition
-        "AVAILABLE",          // Matches upper-case status
-        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8"
-    ];
-
-    // 3. Compile lines and convert into a downloadable raw text blob context
     const csvContent = [headers.join(","), sampleRow.join(",")].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
-    // 4. Create a virtual download link element node
     const temporaryLink = document.createElement("a");
     temporaryLink.setAttribute("href", url);
     temporaryLink.setAttribute("download", "invision_asset_import_template.csv");
     temporaryLink.style.visibility = "hidden";
 
-    // 5. Append, click to trigger download window, and strip away trash nodes
     document.body.appendChild(temporaryLink);
     temporaryLink.click();
     document.body.removeChild(temporaryLink);
-    URL.revokeObjectURL(url); // Clean browser memory allocation signatures
+    URL.revokeObjectURL(url);
 }
 
-// Fetches current database configurations to pre-populate inputs on form mount
 function prefillAssetDataFields() {
     const assetId = document.getElementById("targetAssetId").value;
 
-    fetch(`/api/assets/${assetId}`) // Targets your standard GET mapping for single entities
+    fetch(`/api/assets/${assetId}`)
         .then(response => {
             if (!response.ok) throw new Error("Failed to resolve asset record data profiles.");
             return response.json();
@@ -1125,14 +900,12 @@ function prefillAssetDataFields() {
         })
         .catch(error => {
             console.error("Error loading asset details:", error);
-            alert("Could not load current asset profiles for modifications.");
+            showErrorModal("Data Sync Failure", "Could not load current asset profiles for modifications layout mapping.");
         });
 }
 
-// Executes the final PUT request transaction cascade
 function submitAssetUpdate(event) {
     event.preventDefault();
-
     const assetId = document.getElementById("targetAssetId").value;
     const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
@@ -1145,8 +918,6 @@ function submitAssetUpdate(event) {
         location: document.getElementById("location").value,
         cost: Number(document.getElementById("cost").value),
         path: document.getElementById("path").value,
-
-        // Generates the clean timestamp signature your backend expects
         acquisitionDate: new Date().toISOString().slice(0, 19)
     };
 
@@ -1159,32 +930,37 @@ function submitAssetUpdate(event) {
         body: JSON.stringify(updatedPayload)
     })
     .then(async response => {
-        // Read the stream exactly ONCE
         const textMessage = await response.text();
 
         if (response.ok) {
-            alert("System Record Confirmed: " + textMessage);
-            window.location.href = `/assets?success=true`;
+            showToast("System Record Confirmed: " + textMessage);
+            setTimeout(() => window.location.href = `/assets?success=true`, 1500);
         } else {
-            // Use the variable, do not re-read response.text()
-            alert("Update Refused: " + textMessage);
+            try {
+                const errorJson = JSON.parse(textMessage);
+                if (errorJson.message) {
+                    const cleanMessage = errorJson.message.replace("An unexpected error occurred: ", "");
+                    showErrorModal("Update Refused", cleanMessage);
+                } else {
+                    showErrorModal("Update Refused", textMessage);
+                }
+            } catch (e) {
+                showErrorModal("Update Refused", textMessage);
+            }
         }
     })
     .catch(error => {
         console.error("Error committing PUT update transaction matrix:", error);
-        alert("A system connectivity breakdown blocked processing updates.");
+        showErrorModal("Network Interruption", "A system connectivity breakdown blocked processing modifications updates.");
     });
 }
 
-// 2. Add the dynamic toast rendering engine to the bottom of main.js
 function showToast(message) {
     let toastContainer = document.getElementById("toastContainer");
     if (!toastContainer) {
         toastContainer = document.createElement("div");
         toastContainer.id = "toastContainer";
         toastContainer.className = "toast-container";
-
-        // ─── FORCE INLINE STYLES TO BYPASS ALL CSS CACHING AND GRID OVERRIDES ───
         toastContainer.style.cssText = `
             position: fixed !important;
             top: 24px !important;
@@ -1197,14 +973,11 @@ function showToast(message) {
             width: auto !important;
             height: auto !important;
         `;
-
         document.body.appendChild(toastContainer);
     }
 
     const toast = document.createElement("div");
     toast.className = "toast-notification toast-success";
-
-    // Force a strict fixed width directly on the notification card so it can never squash
     toast.style.cssText = `
         width: 340px !important;
         max-width: calc(100vw - 48px) !important;
@@ -1216,10 +989,8 @@ function showToast(message) {
         <span class="toast-icon">✓</span>
         <span class="toast-message" style="white-space: normal !important; word-break: break-word !important;">${message}</span>
     `;
-
     toastContainer.appendChild(toast);
 
-    // Smoothly strip away element references after animations conclude
     setTimeout(() => {
         toast.classList.add("toast-fade-out");
         toast.addEventListener("animationend", () => toast.remove());
