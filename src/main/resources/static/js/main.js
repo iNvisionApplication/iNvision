@@ -1125,3 +1125,26 @@ document.addEventListener("DOMContentLoaded", () => {
         askMeMessages.scrollTop = askMeMessages.scrollHeight;
     }
 });
+
+//FILTER: ASSETS BY CATEGORY
+function filterAssetsByCategory() {
+    const category = document.getElementById("assetCategoryFilter").value;
+    const container = document.getElementById("availableAssetsContainer");
+
+    if (category === "ALL") {
+        loadAvailableAssets(0); // Reload everything
+        return;
+    }
+
+    // Fetch filtered list
+    fetch(`/api/assets/category/${category}`)
+        .then(response => response.json())
+        .then(assets => {
+            renderAssetSearchResults(assets); // Use existing renderer
+            document.getElementById("assetCount").innerText = `${assets.length} results`;
+        })
+        .catch(error => {
+            console.error("Filter error:", error);
+            showErrorModal("Filter Failed", "Could not retrieve assets by category.");
+        });
+}

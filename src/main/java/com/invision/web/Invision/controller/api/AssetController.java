@@ -54,6 +54,12 @@ public class AssetController {
         return ResponseEntity.ok(assets);
     }
 
+    // Filter assets by category
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<AssetResponseDTO>> getByCategory(@PathVariable String category) {
+        return ResponseEntity.ok(assetService.getAssetsByCategory(category));
+    }
+
     // Create asset
     @PostMapping
     public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO assetRequestDTO) {

@@ -45,8 +45,7 @@
                 <span id="assetCount">Loading...</span>
             </div>
 
-            <div class="asset-search-wrapper">
-
+            <div class="asset-search-wrapper" style="display: flex; gap: 10px;">
                 <i data-lucide="search" class="asset-search-icon"></i>
 
                 <input type="text"
@@ -55,6 +54,12 @@
                        placeholder="Search assets..."
                        onkeyup="searchAllAssets()">
 
+                <select id="assetCategoryFilter" class="form-control" onchange="filterAssetsByCategory()" style="max-width: 200px;">
+                    <option value="ALL">All Categories</option>
+                    <option th:each="cat : ${T(com.invision.web.Invision.enums.Category).values()}"
+                            th:value="${cat}"
+                            th:text="${cat}"></option>
+                </select>
             </div>
 
             <div class="asset-grid" id="availableAssetsContainer">
