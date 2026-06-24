@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class UsersPageController {
     @GetMapping("/users")
-    @PreAuthorize("hasAnyRole = 'ROLE_ADMIN','ROLE_MANAGER'")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public String usersPage(Model model) {
         model.addAttribute("currentUri", "/users");
         return "users/users";

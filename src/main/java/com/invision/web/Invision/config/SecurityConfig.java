@@ -33,8 +33,8 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/assets/**",
                                 "/api/loans/**",
-                                "/api/users/**",
-                                "/users/**",
+                                //"/api/users/**",
+                                //"/users/**",
                                 "/api/notification/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -90,7 +90,7 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, exception) -> {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 })
-        );
+                );
 
 
         return http.build();
