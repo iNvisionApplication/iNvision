@@ -21,6 +21,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -61,9 +62,18 @@ public class NotificationService {
         sendEmailNotification(email, reason, message);
     }
 
-    public List<SystemNotificationDTO> getSystemNotifications(){
-       User user = getAuthenticatedUser();
-        return systemNotificationRepository.findByUserIdAndIsRead(user.getUserId(), false).stream().map(notificationMapper::systemNotificationToSystemNotificationDTO).toList();
+    public List<SystemNotificationDTO> getSystemNotifications() {
+        User user = getAuthenticatedUser();
+
+
+        if (user == null) {
+            return Collections.emptyList();
+        }
+
+        return systemNotificationRepository.findByUserIdAndIsRead(user.getUserId(), false)
+                .stream()
+                .map(notificationMapper::systemNotificationToSystemNotificationDTO)
+                .toList();
     }
 
     public void markAsRead(Long notificationId) throws Exception {
@@ -91,8 +101,13 @@ public class NotificationService {
     }
 
     private User getAuthenticatedUser() {
-        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder
-                .getContext().getAuthentication().getPrincipal();
-        return userDetails.getUser();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof CustomUserDetails) {
+            return ((CustomUserDetails) principal).getUser();
+        }
+
+        // Return null if it's a String ("anonymousUser")
+        return null;
     }
 }
