@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Manage Inventory — iNVision Asset Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght=400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+</head>
+<body>
+
+<div class="main-content">
+    <div class="content-area">
+
+        <div class="page-header">
+            <h1 class="page-heading">
+                Asset Acquisition
+                <span>Register new machinery, system profiles, or execute catalog spreadsheet file imports.</span>
+            </h1>
+            <a th:href="@{/dashboard}" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Return to Dashboard
+            </a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" style="margin: 0 0 24px 0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span th:text="${successMessage}">Operation processed successfully.</span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-error" style="margin: 0 0 24px 0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span th:text="${errorMessage}">An error was encountered during ingestion execution.</span>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="form-card">
+                <h2 class="card-title" style="margin-bottom: 20px; font-size: 14px;">Manual Registration</h2>
+
+                <form id="manualAssetForm" method="POST" enctype="multipart/form-data">
+
+                    <div class="form-group">
+                        <label class="form-label" for="title">Asset Title / Name</label>
+                        <input class="form-control" type="text" id="title" name="title" placeholder="e.g., MacBook Pro 16-inch M3" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="serialNumber">Serial Number</label>
+                            <input class="form-control" type="text" id="serialNumber" name="serialNumber" placeholder="e.g., C02X81K8JG5H" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="category">Category</label>
+                            <select class="form-control" id="category" name="category" required>
+<!--                                <option value="ELECTRONICS">Laptops & Computing</option>-->
+                                <option value="AUDIO">Audio Devices / Mics / Headsets</option>
+                                <option value="CAMERA">Cameras & Video Equipment</option>
+                                <option value="LAPTOP">Laptops</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="condition">Initial Condition</label>
+                            <select class="form-control" id="condition" name="condition" required>
+<!--                                <option value="NEW">Brand New / Factory Boxed</option>-->
+                                <option value="GOOD">Good / Lightly Used</option>
+<!--                                <option value="FAIR">Fair / Functional</option>-->
+                                <option value="DAMAGED">Damaged / Requires Repair</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="location">Storage / Allocation Hub</label>
+                            <select class="form-control" id="location" name="location" required>
+                                <option value="">Select storage location</option>
+                                <option value="VIDEO_LOCKER">Video Locker</option>
+                                <option value="IT_STOREROOM">IT Storeroom</option>
+                                <option value="PRODUCTION_STUDIO">Production Studio</option>
+
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="cost">Acquisition Cost (ZAR)</label>
+                            <input class="form-control" type="number" step="0.01" id="cost" name="cost" placeholder="0.00" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="path">Asset Image URL</label>
+                            <input class="form-control" type="url" id="path" name="path" placeholder="e.g., https://images.unsplash.com/photo-macbook.png" />
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="margin-top: 20px; padding-top: 16px;">
+                        <button type="submit" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Save Corporate Asset
+                        </button>
+                        <button type="reset" class="btn btn-secondary">Clear Entry</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-card">
+                <h2 class="card-title" style="margin-bottom: 12px; font-size: 14px;">Bulk System Ingestion</h2>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+                    Upload a compiled standard format spreadsheet data file (<strong>.csv</strong> or <strong>.xlsx</strong>) to dynamically ingest multiple new entries simultaneously.
+                </p>
+
+                <form  method="POST" enctype="multipart/form-data" id="bulkUploadForm">
+
+                    <div class="file-upload-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p id="uploadPrompt">Drag file here or click to browse directories</p>
+                        <span>Supports standard formatted CSV, XLS files up to 10MB</span>
+                        <input type="file" id="csvFile" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required />
+                    </div>
+
+                    <div class="file-preview" id="filePreview" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; stroke: var(--steel);">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <div style="flex: 1; overflow: hidden;">
+                            <div id="fileName" style="font-weight: 500; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">catalog_manifest.csv</div>
+                            <span id="fileSize" style="font-size: 11px; color: var(--text-muted);">142 KB</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger" style="padding: 4px 8px;" id="clearFileBtn">Remove</button>
+                    </div>
+
+                    <div style="margin-top: 24px;">
+                        <button type="submit" class="btn btn-steel btn-full" id="executeBulkBtn" disabled>
+                            Process Spreadsheet Manifest
+                        </button>
+                    </div>
+                </form>
+
+                <div class="brand-rule">Manifest Guidelines</div>
+                <div style="background: var(--bg-base); border-radius: var(--radius); padding: 14px; border: 1px solid var(--border);">
+                    <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.6; font-family: var(--mono);">
+                        Required columns mapping schema:<br/>
+                        <strong>title, category, serial_number, acquisition_date, cost, location, condition, status, photo_path</strong>
+                    </p>
+                    <a href="#" id="downloadTemplateBtn" style="display: inline-block; font-size: 12px; color: var(--steel); margin-top: 10px; font-weight: 500; text-decoration: none;">
+                         Download Standard CSV Template
+                    </a>
+                </div>
+            </div>
+
+        </div> </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('csvFile');
+    const filePreview = document.getElementById('filePreview');
+    const fileNameDisp = document.getElementById('fileName');
+    const fileSizeDisp = document.getElementById('fileSize');
+    const clearFileBtn = document.getElementById('clearFileBtn');
+    const executeBulkBtn = document.getElementById('executeBulkBtn');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+
+    // Dragover state styles transformations
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        }, false);
+    });
+
+    // Drop file interception handle passing
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length) {
+            fileInput.files = files;
+            updateFilePreviewState(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length) updateFilePreviewState(this.files[0]);
+    });
+
+    function updateFilePreviewState(file) {
+        fileNameDisp.textContent = file.name;
+        fileSizeDisp.textContent = (file.size / 1024).toFixed(1) + ' KB';
+
+        dropZone.style.display = 'none';
+        filePreview.style.display = 'flex';
+        executeBulkBtn.disabled = false;
+    }
+
+    clearFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        filePreview.style.display = 'none';
+        dropZone.style.display = 'block';
+        executeBulkBtn.disabled = true;
+    });
+
+    // Intercept execution pipeline triggers to update user interaction loaders
+    document.getElementById('bulkUploadForm').addEventListener('submit', () => {
+        executeBulkBtn.disabled = true;
+        executeBulkBtn.textContent = "Processing Inventory Ingestion Matrix...";
+    });
+</script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

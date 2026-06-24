@@ -331,6 +331,36 @@ select.form-control,
     color: #0d1b3e;
 }
 
+/* login button spinner */
+.login-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: loginSpin 0.8s linear infinite;
+}
+
+@keyframes loginSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.btn.loading #loginIcon {
+    display: none;
+}
+
+.btn.loading #loginSpinner {
+    display: inline-block;
+}
+
 /* responsive */
 @media (max-width: 700px) {
     .auth-page,
@@ -365,4 +395,35 @@ select.form-control,
     .auth-form-title {
         font-size: 28px;
     }
+}
+
+.password-field {
+    position: relative;
+    width: 100%;
+}
+
+.password-field input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.65;
+    transition: opacity 0.2s ease;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+
+.password-toggle svg {
+    width: 18px;
+    height: 18px;
 }

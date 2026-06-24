@@ -3,6 +3,8 @@
       th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 
 <head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Available Assets</title>
 </head>
 
@@ -10,6 +12,7 @@
 <section>
 
     <input type="hidden" id="currentUserId" th:value="${currentUserId}"/>
+    <input type="hidden" id="currentUserRole" th:value="${currentUserRole}"/>
 
     <div class="page-header">
         <div>
@@ -17,9 +20,21 @@
             <p class="page-subtitle">Choose an asset and submit a loan request.</p>
         </div>
 
-        <a th:href="@{/loans}" class="btn btn-secondary">
-            Back to My Loans
-        </a>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}">
+                <a th:href="@{/assets/add}" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add New Asset
+                </a>
+            </div>
+
+            <a th:href="@{/loans}" class="btn btn-secondary">
+                Back to My Loans
+            </a>
+        </div>
     </div>
 
     <div class="asset-loan-layout">
@@ -28,6 +43,23 @@
             <div class="asset-toolbar">
                 <h3>Available for Loan</h3>
                 <span id="assetCount">Loading...</span>
+            </div>
+
+            <div class="asset-search-wrapper" style="display: flex; gap: 10px;">
+                <i data-lucide="search" class="asset-search-icon"></i>
+
+                <input type="text"
+                       id="assetSearchInput"
+                       class="form-control asset-search"
+                       placeholder="Search assets..."
+                       onkeyup="searchAllAssets()">
+
+                <select id="assetCategoryFilter" class="form-control" onchange="filterAssetsByCategory()" style="max-width: 200px;">
+                    <option value="ALL">All Categories</option>
+                    <option th:each="cat : ${T(com.invision.web.Invision.enums.Category).values()}"
+                            th:value="${cat}"
+                            th:text="${cat}"></option>
+                </select>
             </div>
 
             <div class="asset-grid" id="availableAssetsContainer">
@@ -63,7 +95,7 @@
                           placeholder="Explain why you need this asset?"
                           required></textarea>
 
-                <button type="submit" class="btn btn-primary btn-full" id="submitLoanBtn" disabled>
+                <button type="submit" class="btn btn-primary" id="submitLoanBtn" disabled>
                     Select an Asset First
                 </button>
 
@@ -71,6 +103,17 @@
 
         </aside>
 
+    </div>
+
+    <div id="errorModalBackdrop" class="modal-backdrop">
+        <div class="modal">
+            <h3 class="modal-title" id="errorModalTitle">Request Restricted</h3>
+            <div class="modal-body" id="errorModalBody">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="closeErrorModalBtn" class="btn btn-primary">Acknowledge</button>
+            </div>
+        </div>
     </div>
 
 </section>

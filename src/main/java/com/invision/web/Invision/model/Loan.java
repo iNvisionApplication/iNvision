@@ -1,5 +1,9 @@
 package com.invision.web.Invision.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.invision.web.Invision.enums.AssetLoanStatus;
+import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanPeriod;
 import com.invision.web.Invision.enums.LoanStatus;
 import jakarta.persistence.*;
@@ -17,18 +21,20 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+
 public class Loan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long loanId;
 
-    @ManyToOne
-    @JoinColumn(name ="asset_id")
-    private Asset asset;
-
-    @ManyToOne
-    @JoinColumn(name ="user_id")
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "asset_id")
+    private Asset asset;
 
     @NotNull
     private LocalDateTime requestDate;
@@ -39,18 +45,31 @@ public class Loan {
     @Enumerated(EnumType.STRING)
     private LoanStatus status;
 
+    @Column(name ="checkout_date")
     private LocalDateTime checkoutDate;
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
     private LoanPeriod loanPeriod;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_department")
+    private Department userDepartment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "asset_loan_status")
+    private AssetLoanStatus assetLoanStatus;
+
+    @Column(name="due_date")
     private LocalDateTime dueDate;
 
+    @Column(name="return_date")
     private LocalDateTime returnDate;
 
     public boolean isOverdue(){
-        return checkoutDate.isBefore(LocalDateTime.now());
+        return dueDate != null
+                && dueDate.isBefore(LocalDateTime.now())
+                && status != LoanStatus.RETURNED;
     }
 
 }

@@ -21,6 +21,10 @@ public class CustomUserDetails implements UserDetails {
         return user.getUserId();
     }
 
+    public String getDepartment() {
+        return user.getDepartment().name();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Maps your DB role/RBAC to Spring Security authorities
@@ -45,5 +49,9 @@ public class CustomUserDetails implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return user.isActive(); }
+
+    public User getUser() {
+        return user;
+    }
 }

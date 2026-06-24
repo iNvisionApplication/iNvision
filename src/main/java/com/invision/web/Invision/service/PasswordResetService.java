@@ -5,6 +5,8 @@ import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.PasswordResetTokenRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
@@ -19,6 +21,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender mailSender;
 
     public void createResetToken(String email) {
         var userOpt = userRepository.findByEmail(email);
@@ -39,9 +42,20 @@ public class PasswordResetService {
 
         tokenRepository.save(resetToken);
 
-        // NOTES!!!!!!!!!!!!!
-        // 2. Output the link (Replace with emailService.sendAsync() when email sender is configured)
-        System.out.println("Password reset link: http://localhost:8081/forgot-password/reset?token=" + token);
+        sendResetEmail(user.getEmail(), token);
+    }
+
+    private void sendResetEmail(String recipientEmail, String token) {
+        String resetUrl = "http://localhost:8081/forgot-password/reset?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("noreply@invisionapp.com");
+        message.setTo(recipientEmail);
+        message.setSubject("iNvision - Password Reset Request");
+        message.setText("Hello,\n\nYou requested to reset your password. Please click the secure link below to proceed:\n\n"
+                + resetUrl + "\n\nThis link will automatically expire in 15 minutes.\n\nIf you did not request this, please ignore this email.");
+
+        mailSender.send(message);
     }
 
     public PasswordResetToken validateToken(String token) {

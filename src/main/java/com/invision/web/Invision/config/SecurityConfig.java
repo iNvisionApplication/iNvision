@@ -1,17 +1,23 @@
 package com.invision.web.Invision.config;
 
 import com.invision.web.Invision.service.CustomUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
@@ -27,20 +33,36 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/assets/**",
                                 "/api/loans/**",
+                                //"/api/users/**",
+                                //"/users/**",
+                                "/api/notification/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/forgot-password/**"
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
-                                "/login", "/register",
-                                "/forgot-password/**",
-                                "/api/assets/**",
-                                "/api/loans/**",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-                        ).permitAll()
+                        // Public Assets & Non-authenticated view layers
+
+                                // Public Assets & Non-authenticated view layers
+                                .requestMatchers(
+                                        "/", // 💡 ADD THIS LINE: Explicitly opens access to your root index landing page view
+                                        "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
+                                        "/error", "/error/**",
+                                        "/api/notification/**",
+                                        "/login", "/register",
+                                        "/forgot-password/**",
+                                        "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                                ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**")
+                        .hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/**")
+                        .hasAnyRole("ADMIN")
+                        .requestMatchers("/api/assets/**", "/api/loans/**")
+                        .authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .userDetailsService(customUserDetailsService)
@@ -52,7 +74,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutSuccessUrl("/?logout=true")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()
@@ -63,7 +85,13 @@ public class SecurityConfig {
                         .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
+                        .sessionRegistry(sessionRegistry())
+                ).exceptionHandling(ex -> ex
+                .accessDeniedHandler((request, response, exception) -> {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                })
                 );
+
 
         return http.build();
     }
@@ -73,6 +101,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
 
     @Bean
     public HttpSessionEventPublisher httpSessionEventPublisher() {

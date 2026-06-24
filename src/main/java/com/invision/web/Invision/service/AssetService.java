@@ -1,22 +1,28 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
-import com.invision.web.Invision.enums.EntityType;
+import com.invision.web.Invision.enums.*;
+import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.repository.AssetRepository;
 import com.invision.web.Invision.dto.AssetRequestDTO;
 import com.invision.web.Invision.dto.AssetResponseDTO;
 import com.invision.web.Invision.dto.AssetSearchRequest;
 import com.invision.web.Invision.mapper.AssetMapper;
 import com.invision.web.Invision.model.Asset;
-import com.invision.web.Invision.enums.Category;
-import com.invision.web.Invision.enums.AssetStatus;
-import com.invision.web.Invision.enums.Condition;
 
+import com.invision.web.Invision.repository.LoanRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.coyote.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +34,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +42,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class AssetService {
 
+    private final LoanRepository loanRepository;
     private final AssetRepository assetRepository;
     private final AssetMapper assetMapper;
     private final AuditLogService auditLogService;
@@ -48,23 +56,29 @@ public class AssetService {
         return assetMapper.AssetToAssetResponseDTO(asset);
     }
 
-    public String updateAsset(Long assetId, AssetRequestDTO assetDetails){
+    public String updateAsset(Long assetId, AssetRequestDTO assetDetails) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
-        asset.setTitle(assetDetails.title());
-        asset.setCategory(assetDetails.category());
-        asset.setSerialNumber(assetDetails.serialNumber());
-        asset.setAcquisitionDate(assetDetails.acquisitionDate());
-        asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
-        asset.setLocation(assetDetails.location());
-        asset.setCondition(assetDetails.condition());
-        asset.setStatus(AssetStatus.AVAILABLE);
-        asset.setPhotoPath(assetDetails.path());
+        if(asset.getStatus()==AssetStatus.AVAILABLE){
+            asset.setTitle(assetDetails.title());
+            asset.setCategory(assetDetails.category());
+            asset.setSerialNumber(asset.getSerialNumber());
+            asset.setAcquisitionDate(assetDetails.acquisitionDate());
+            asset.setCost(BigDecimal.valueOf(assetDetails.cost()));
+            asset.setLocation(assetDetails.location());
+            asset.setCondition(assetDetails.condition());
+            asset.setStatus(AssetStatus.AVAILABLE);
+            asset.setPhotoPath(assetDetails.path());
 
-        assetRepository.save(asset);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("ASSET IS LOANED. CANNOT EDIT!");
+        }
+
+
 
         String newDetails = "Title: " + asset.getTitle() + " | Status: " + asset.getStatus();
 
@@ -74,19 +88,39 @@ public class AssetService {
     }
 
     // Retire an Asset
-    public void retireAsset(Long assetId){
+    public void retireAsset(Long assetId) throws BadRequestException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset Is Not Found: " + assetId));
 
         String oldStatus = String.valueOf(asset.getStatus());
-        asset.setStatus(AssetStatus.RETIRED);
+
+        if (asset.getStatus() == AssetStatus.AVAILABLE) {
+            asset.setStatus(AssetStatus.RETIRED);
+
+            // Find all pending loans associated with this specific asset
+            List<Loan> loanList = loanRepository.findByAssetAssetIdAndStatus(asset.getAssetId(), LoanStatus.PENDING);
+
+            // Process and reject every open request safely
+            loanList.forEach(loan -> {
+                loan.setStatus(LoanStatus.REJECTED);
+                loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED); // Keeps your handoff tracking in sync
+            });
+
+            // Save the cascading states back to your DB context rules
+            loanRepository.saveAll(loanList);
+            assetRepository.save(asset);
+        }else{
+            throw new BadRequestException("Asset is Loaned or Retired!!");
+        }
+
+
         assetRepository.save(asset);
 
         auditLogService.logUpdate(getCurrentUserId(), EntityType.ASSET, assetId,oldStatus, "Status: Retired");
     }
 
     // Get Available And Loaned Assets
-    public List<AssetResponseDTO> getAvailAndLoanedAssests(){
+    public List<AssetResponseDTO> getAvailAndLoanedAssets(){
         return assetRepository.searchAndFilterAssets(null, null, null, null, null)
                 .stream()
                 .filter(asset -> asset.getStatus() != AssetStatus.RETIRED)
@@ -115,8 +149,7 @@ public class AssetService {
                 .collect(Collectors.toList());
     }
 
-
-
+    // Search with AssetSearchRequest object (POST endpoint)
     public List<AssetResponseDTO> searchAndFilterAssets(AssetSearchRequest searchRequest) {
         List<Asset> assets = assetRepository.searchAndFilterAssets(
                 searchRequest.title(),
@@ -125,12 +158,23 @@ public class AssetService {
                 searchRequest.location(),
                 searchRequest.condition()
         );
+
+        // Apply relevance sorting if searching by title
+        if (searchRequest.title() != null && !searchRequest.title().trim().isEmpty()) {
+            String searchTerm = searchRequest.title().toLowerCase().trim();
+            assets.sort((a1, a2) -> {
+                int score1 = calculateRelevance(a1.getTitle(), searchTerm);
+                int score2 = calculateRelevance(a2.getTitle(), searchTerm);
+                return Integer.compare(score2, score1);
+            });
+        }
+
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // Main search and filter logic
+    // Search with String parameters (GET endpoint)
     public List<AssetResponseDTO> searchAndFilterAssets(
             String title,
             String category,
@@ -156,6 +200,15 @@ public class AssetService {
             }
         }
 
+        Location locationEnum = null;
+        if (location != null && !location.isEmpty()) {
+            try {
+                locationEnum = Location.valueOf(location.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid location - will return empty results
+            }
+        }
+
         Condition conditionEnum = null;
         if (condition != null && !condition.isEmpty()) {
             try {
@@ -166,11 +219,37 @@ public class AssetService {
         }
 
         List<Asset> assets = assetRepository.searchAndFilterAssets(
-                title, categoryEnum, statusEnum, location, conditionEnum
+                title, categoryEnum, statusEnum, locationEnum, conditionEnum
         );
+
+        // Apply relevance sorting if searching by title
+        if (title != null && !title.trim().isEmpty()) {
+            String searchTerm = title.toLowerCase().trim();
+            assets.sort((a1, a2) -> {
+                int score1 = calculateRelevance(a1.getTitle(), searchTerm);
+                int score2 = calculateRelevance(a2.getTitle(), searchTerm);
+                return Integer.compare(score2, score1);
+            });
+        }
+
         return assets.stream()
                 .map(assetMapper::AssetToAssetResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Calculate relevance score for sorting search results
+    private int calculateRelevance(String title, String searchTerm) {
+        if (title == null) return 0;
+        String lowerTitle = title.toLowerCase();
+
+        if (lowerTitle.equals(searchTerm)) {
+            return 100;  // Exact match - highest relevance
+        } else if (lowerTitle.startsWith(searchTerm)) {
+            return 50;   // Starts with - medium relevance
+        } else if (lowerTitle.contains(searchTerm)) {
+            return 10;   // Contains - lower relevance
+        }
+        return 0;
     }
 
     @Transactional
@@ -191,14 +270,14 @@ public class AssetService {
                     String serialNumber = record.get("serial_number");
                     String acquisitionDateStr = record.get("acquisition_date");
                     String costStr = record.get("cost");
-                    String location = record.get("location");
+                    String locationStr = record.get("location");
                     String conditionStr = record.get("condition");
                     String statusStr = record.get("status");
                     String photoPath = record.get("photo_path");
 
                     if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Title is required");
                     if (categoryStr == null || categoryStr.trim().isEmpty()) throw new IllegalArgumentException("Category is required");
-                    if (location == null || location.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
+                    if (locationStr == null || locationStr.trim().isEmpty()) throw new IllegalArgumentException("Location is required");
                     if (statusStr == null || statusStr.trim().isEmpty()) throw new IllegalArgumentException("Status is required");
 
                     LocalDateTime acquisitionDate = null;
@@ -214,13 +293,22 @@ public class AssetService {
                     if (serialNumber != null && serialNumber.trim().isEmpty()) serialNumber = null;
                     if (photoPath != null && photoPath.trim().isEmpty()) photoPath = null;
 
+                    // Convert location string to enum
+                    Location locationEnum;
+                    try {
+                        locationEnum = Location.valueOf(locationStr.trim());
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Invalid location value: " + locationStr + ". Valid values: " +
+                                java.util.Arrays.toString(Location.values()));
+                    }
+
                     Asset asset = Asset.builder()
                             .title(title.trim())
                             .category(Category.valueOf(categoryStr.trim().toUpperCase()))
                             .serialNumber(serialNumber)
                             .acquisitionDate(acquisitionDate)
                             .cost(cost)
-                            .location(location.trim())
+                            .location(locationEnum)
                             .condition(conditionStr != null && !conditionStr.trim().isEmpty() ? Condition.valueOf(conditionStr.trim().toUpperCase()) : null)
                             .status(AssetStatus.valueOf(statusStr.trim().toUpperCase()))
                             .photoPath(photoPath)
@@ -249,11 +337,8 @@ public class AssetService {
             } else {
                 throw new RuntimeException("No valid assets to import");
             }
-        } catch (Exception e) {
-            throw e;
         }
     }
-
 
     public Long getCurrentUserId() {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
@@ -265,4 +350,32 @@ public class AssetService {
         }
         return null;
     }
+
+    public Page<AssetResponseDTO> getAssetsForCurrentUser(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("title").ascending());
+
+        // 1. Grab the active security session details
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        assert auth != null;
+        boolean isAdminOrManager = auth.getAuthorities().stream()
+                .anyMatch(a -> Objects.equals(a.getAuthority(), "ROLE_ADMIN") || Objects.equals(a.getAuthority(), "ROLE_MANAGER"));
+
+        Page<Asset> assetPage;
+
+        // 2. Filter data matching identity bounds
+        if (isAdminOrManager) {
+            // Admins & Managers see ALL assets (AVAILABLE, LOANED, MAINTENANCE, RETIRED, etc.)
+            assetPage = assetRepository.findAll(pageable);
+        } else {
+            // Borrowers only see AVAILABLE and LOANED assets
+            assetPage = assetRepository.findByStatusIn(
+                    List.of(AssetStatus.AVAILABLE, AssetStatus.LOANED),
+                    pageable
+            );
+        }
+
+        return assetPage.map(assetMapper::AssetToAssetResponseDTO);
+    }
+
 }

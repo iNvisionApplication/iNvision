@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Modify Asset Profile — iNVision</title>
+</head>
+
+<body>
+<section>
+
+    <input type="hidden" id="targetAssetId" th:value="${assetId}"/>
+
+    <div class="page-header">
+        <div>
+            <h2 class="page-heading">Modify Asset Profile</h2>
+            <p class="page-subtitle">Update system records, lifecycle metrics, or operational hub allocation zones.</p>
+        </div>
+        <a th:href="@{/assets}" class="btn btn-secondary">Cancel & Return</a>
+    </div>
+
+    <div class="form-card" style="max-width: 800px; margin: 0 auto;">
+        <form id="updateAssetForm">
+
+            <div class="form-group">
+                <label class="form-label" for="title">Asset Title / Name</label>
+                <input class="form-control" type="text" id="title" required />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="serialNumber">Serial Number</label>
+                    <input class="form-control" type="text" id="serialNumber" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="category">Category</label>
+                    <select class="form-control" id="category" required>
+                        <option value="">Select category</option>
+                        <option value="AUDIO">Audio Hardware</option>
+                        <option value="CAMERA">Camera</option>
+                        <option value="LAPTOP">Laptops</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="condition">Current Condition</label>
+                    <select class="form-control" id="condition" required>
+                        <option value="">Select condition</option>
+                        <option value="GOOD">Good / Lightly Used</option>
+                        <option value="DAMAGED">Damaged / Requires Repair</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="location">Storage / Allocation Hub</label>
+                    <select class="form-control" id="location" required>
+                        <option value="VIDEO_LOCKER">Video Locker</option>
+                        <option value="IT_STOREROOM">IT Storeroom</option>
+                        <option value="PRODUCTION_STUDIO">Production Studio</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="cost">Acquisition Cost (ZAR)</label>
+                <input class="form-control" type="number" step="0.01" id="cost" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="path">Asset Image URL</label>
+                <input class="form-control" type="url" id="path" />
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px; padding-top: 16px; display: flex; gap: 10px; align-items: center;">
+                <button type="submit" class="btn btn-primary">Commit Changes</button>
+
+                <button type="button" class="btn btn-danger" onclick="triggerAssetRetirement()">Retire Asset</button>
+
+                <a th:href="@{/assets}" class="btn btn-secondary" style="margin-left: auto;">Discard Modifications</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function triggerAssetRetirement() {
+            const assetId = document.getElementById("targetAssetId").value;
+            if (!assetId) {
+                alert("Contextual Failure: No baseline asset ID found to retire.");
+                return;
+            }
+
+            // Fire an explicit modal confirmation block to shield against accidental clicks
+            if (!confirm("Are you absolute sure you want to retire this hardware inventory asset? This action will permanently lock it out from new borrower loan requests.")) {
+                return;
+            }
+
+            // Extract anti-forgery keys from Thymeleaf head templates
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+            fetch(`/api/assets/retire/${assetId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(async response => {
+                const textMessage = await response.text();
+                if (response.ok) {
+                    alert("System Record Confirmed: " + textMessage);
+                    // Redirect back to main dashboard inventory grid panel with a success notification state
+                    window.location.href = `/assets?success=true&msg=${encodeURIComponent(textMessage)}`;
+                } else {
+                    alert("Retirement Refused: " + textMessage);
+                }
+            })
+            .catch(error => {
+                console.error("Pipeline failure executing transaction lifecycle update:", error);
+                alert("System Interruption: A connectivity error blocked transmission of lifecycle metrics.");
+            });
+        }
+    </script>
+
+</section>
+</body>
+</html>

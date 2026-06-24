@@ -1,7 +1,10 @@
 package com.invision.web.Invision.dto;
 
+import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanPeriod;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.*;
 
 public record LoanRequestDTO(
@@ -9,9 +12,7 @@ public record LoanRequestDTO(
         @Positive(message = "Asset ID must be valid")
         Long assetId,
 
-        @NotNull(message = "User ID is required")
-        @Positive(message = "User ID must be valid")
-        Long userId,
+
 
         @NotBlank(message = "Description is required")
         @Size(max = 20, message = "Description must be under 255 characters")
