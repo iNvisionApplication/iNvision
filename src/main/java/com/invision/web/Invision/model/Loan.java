@@ -1,5 +1,7 @@
 package com.invision.web.Invision.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.invision.web.Invision.enums.AssetLoanStatus;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanPeriod;
@@ -19,11 +21,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+
 public class Loan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long loanId;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User user;

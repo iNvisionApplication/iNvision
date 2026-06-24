@@ -16,12 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
-import org.springframework.ui.Model;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -37,7 +35,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
 
-
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
@@ -46,7 +43,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    //Loan Errors
+    // Loan Errors
     @ExceptionHandler(InvalidLoanStatusChangeException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidLoanStatusChange(InvalidLoanStatusChangeException exception, WebRequest request){
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponseDTO(
@@ -69,8 +66,7 @@ public class GlobalExceptionHandler {
         ));
     }
 
-
-    //Asset Errors
+    // Asset Errors
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
@@ -86,7 +82,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateSerialNumberException.class)
     public ResponseEntity<ErrorResponseDTO> handleDuplicateSerialNumberException(
             DuplicateSerialNumberException ex, WebRequest request) {
-        return  ResponseEntity.status(HttpStatus.CONFLICT).body( new ErrorResponseDTO(
+        return ResponseEntity.status(HttpStatus.CONFLICT).body( new ErrorResponseDTO(
                 HttpStatus.CONFLICT.value(),
                 "DUPLICATE_SERIAL_NUMBER",
                 ex.getMessage(),
@@ -98,8 +94,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BulkImportException.class)
     public ResponseEntity<ErrorResponseDTO> handleBulkImportException(
             BulkImportException ex, WebRequest request) {
-
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "BULK_IMPORT_FAILED",
@@ -108,8 +102,6 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         ));
     }
-
-
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolationException(
@@ -132,8 +124,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(
             IllegalArgumentException ex, WebRequest request) {
-
-
         return ResponseEntity.status( HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "INVALID_ARGUMENT",
@@ -143,10 +133,9 @@ public class GlobalExceptionHandler {
         ));
     }
 
-
-
-    //User Exceptions
-    @ExceptionHandler()
+    // User Exceptions
+    // 💡 FIX 1: Explicitly define the target class to prevent reflection registry conflicts
+    @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponseDTO> handleEmailAlreadyExistsException(
             EmailAlreadyExistsException exception, WebRequest request){
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -162,8 +151,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PasswordMismatchException.class)
     public ResponseEntity<ErrorResponseDTO> handlePasswordMismatchException(
             PasswordMismatchException ex, WebRequest request) {
-
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "PASSWORD_MISMATCH",
@@ -184,8 +171,6 @@ public class GlobalExceptionHandler {
                         LocalDateTime.now())
         );
     }
-
-
 
     @ExceptionHandler(AccessDeniedException.class)
     public Object handleAccessDenied(AccessDeniedException ex,
@@ -225,16 +210,19 @@ public class GlobalExceptionHandler {
         return new ModelAndView("forward:/error");
     }
 
-
-
     // helper method
     private boolean isApiRequest(HttpServletRequest request) {
         String accept = request.getHeader("Accept");
         String uri = request.getRequestURI();
+
+        // 💡 FIX 2: Prevent the /error route itself from being mistakenly processed as an API call
+        if ("/error".equals(uri)) return false;
+
         return (accept != null && accept.contains("application/json"))
                 || uri.startsWith("/api/");
     }
-    //Generic Handler
+
+    // Generic Handler
     @ExceptionHandler(Exception.class)
     public Object handleGeneral(Exception ex, HttpServletRequest request,
                                 WebRequest webRequest) {
@@ -245,6 +233,12 @@ public class GlobalExceptionHandler {
                             webRequest.getDescription(false),
                             LocalDateTime.now()));
         }
+
+        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
+        if ("/error".equals(request.getRequestURI())) {
+            return new ModelAndView("error"); // Renders your static fallback template without forwarding
+        }
+
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
         return new ModelAndView("forward:/error");
     }

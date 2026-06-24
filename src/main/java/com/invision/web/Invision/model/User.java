@@ -1,5 +1,6 @@
 package com.invision.web.Invision.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.Role;
 import jakarta.persistence.*;
@@ -21,6 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User implements UserDetails {
 
     @Id

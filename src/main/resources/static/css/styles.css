@@ -2418,12 +2418,13 @@ tbody td.muted {
 
 .askme-panel {
     position: fixed;
-    top: 0;
+    top: 60px;
     right: -420px;
     width: 420px;
-    height: 100vh;
+    height: 70vh;
     background: linear-gradient(180deg, #ffffff 0%, var(--bg-base) 100%);
     z-index: 9999;
+    border-radius: 30px;
     display: flex;
     flex-direction: column;
     border-left: 1px solid var(--border);
@@ -2433,6 +2434,7 @@ tbody td.muted {
 
 body.askme-open .askme-panel {
     right: 0;
+    border-radius: 30px;
 }
 
 body.askme-open .content-area {
@@ -2535,7 +2537,7 @@ body.askme-open .content-area {
 .askme-toggle {
     position: fixed;
     right: 24px;
-    bottom: 24px;
+    bottom: 54px;
     z-index: 9998;
     background: linear-gradient(135deg, var(--navy), var(--navy-mid));
     color: white;
