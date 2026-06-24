@@ -35,6 +35,7 @@ public class SecurityConfig {
                                 "/api/loans/**",
                                 "/api/users/**",
                                 "/users/**",
+                                "/api/notification/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/forgot-password/**"
@@ -48,6 +49,7 @@ public class SecurityConfig {
                                         "/", // 💡 ADD THIS LINE: Explicitly opens access to your root index landing page view
                                         "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                         "/error", "/error/**",
+                                        "/api/notification/**",
                                         "/login", "/register",
                                         "/forgot-password/**",
                                         "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"

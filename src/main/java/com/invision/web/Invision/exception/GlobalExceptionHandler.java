@@ -172,43 +172,49 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public Object handleAccessDenied(AccessDeniedException ex,
-                                     HttpServletRequest request) {
-        if (isApiRequest(request)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
-                            "Access denied",
-                            request.getRequestURI(),
-                            LocalDateTime.now()));
-        }
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-        return new ModelAndView("forward:/error");
-    }
+//    @ExceptionHandler(AccessDeniedException.class)
+//    public Object handleAccessDenied(AccessDeniedException ex, HttpServletRequest request,
+//                                     WebRequest webRequest) {
+//        if (isApiRequest(request)) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+//                    .body(new ErrorResponseDTO(403, "ACCESS_DENIED",
+//                            "Access Denied: " + ex.getMessage(),
+//                            webRequest.getDescription(false),
+//                            LocalDateTime.now()));
+//        }
+//
+//        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
+//        if ("/error".equals(request.getRequestURI())) {
+//            return new ModelAndView("error"); // Renders your static fallback template without forwarding
+//        }
+//
+//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+//        return new ModelAndView("forward:/error");
+//    }
 
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    public Object handleAuthorizationDenied(AuthorizationDeniedException ex,
-                                            HttpServletRequest request) {
-        if (isApiRequest(request)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
-                            "You do not have permission to perform this action",
-                            request.getRequestURI(),
-                            LocalDateTime.now()));
-        }
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-        return new ModelAndView("forward:/error");
-    }
+//    @ExceptionHandler(AuthorizationDeniedException.class)
+//    public Object handleAuthorizationDenied(AuthorizationDeniedException ex,
+//                                            HttpServletRequest request) {
+//        if (isApiRequest(request)) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+//                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
+//                            "You do not have permission to perform this action",
+//                            request.getRequestURI(),
+//                            LocalDateTime.now()));
+//        }
+//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+//        return new ModelAndView("forward:/error");
+//    }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public Object handleNoResource(NoResourceFoundException ex,
-                                   HttpServletRequest request) {
-        if (isApiRequest(request)) {
-            return ResponseEntity.notFound().build();
-        }
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/error");
-    }
+//    @ExceptionHandler(NoResourceFoundException.class)
+//    public Object handleNoResource(NoResourceFoundException ex,
+//                                   HttpServletRequest request) {
+//        if (isApiRequest(request)) {
+//            return ResponseEntity.notFound().build();
+//        }
+//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+//        return new ModelAndView("forward:/error");
+//    }
 
     // helper method
     private boolean isApiRequest(HttpServletRequest request) {
@@ -222,24 +228,25 @@ public class GlobalExceptionHandler {
                 || uri.startsWith("/api/");
     }
 
-    // Generic Handler
-    @ExceptionHandler(Exception.class)
-    public Object handleGeneral(Exception ex, HttpServletRequest request,
-                                WebRequest webRequest) {
-        if (isApiRequest(request)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponseDTO(500, "INTERNAL_SERVER_ERROR",
-                            "An unexpected error occurred: " + ex.getMessage(),
-                            webRequest.getDescription(false),
-                            LocalDateTime.now()));
-        }
 
-        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
-        if ("/error".equals(request.getRequestURI())) {
-            return new ModelAndView("error"); // Renders your static fallback template without forwarding
-        }
-
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-        return new ModelAndView("forward:/error");
-    }
+//    // Generic Handler
+//    @ExceptionHandler(Exception.class)
+//    public Object handleGeneral(Exception ex, HttpServletRequest request,
+//                                WebRequest webRequest) {
+//        if (isApiRequest(request)) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(new ErrorResponseDTO(500, "INTERNAL_SERVER_ERROR",
+//                            "An unexpected error occurred: " + ex.getMessage(),
+//                            webRequest.getDescription(false),
+//                            LocalDateTime.now()));
+//        }
+//
+//        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
+//        if ("/error".equals(request.getRequestURI())) {
+//            return new ModelAndView("error"); // Renders your static fallback template without forwarding
+//        }
+//
+//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+//        return new ModelAndView("forward:/error");
+//    }
 }

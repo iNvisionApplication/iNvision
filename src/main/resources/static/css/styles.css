@@ -484,12 +484,18 @@ ul {
     padding: 20px;
 }
 
+/* 💡 FIX THIS BLOCK */
 .topbar {
-    height: 0;
-    padding: 0;
-    border-bottom: none;
-    box-shadow: none;
-    background: transparent;
+    height: 70px; /* Changed from 0 */
+    padding: 0 32px; /* Added horizontal padding */
+    display: flex; /* Added to align the left and right sides */
+    align-items: center; /* Vertically center the bell and title */
+    justify-content: space-between; /* Push the bell to the right */
+    border-bottom: 1px solid var(--border); /* Optional: adds a nice separator line */
+    background: var(--bg-surface); /* Make sure it has a background */
+    border-radius: var(--radius-lg); /* Matches your design language */
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
 }
 
 .topbar-left {
@@ -499,15 +505,19 @@ ul {
     min-width: 0;
 }
 
-.topbar-right ,.page-title{
-    display: none;
+/* 💡 REMOVE 'display: none' FROM HERE */
+.topbar-right {
+    display: flex;
+    align-items: center;
 }
 
-.mobile-menu-btn {
-    margin: 12px;
-    display: none;
+.page-title {
+    /* 💡 REMOVE display: none; if you want the page title to show */
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
 }
-
 .mobile-backdrop {
     position: fixed;
     inset: 0;
@@ -2561,4 +2571,106 @@ body.askme-open .askme-toggle {
         width: 100%;
         right: -100%;
     }
+}
+
+
+/* --- NOTIFICATIONS --- */
+.notification-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-right: 16px;
+}
+
+.notification-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    cursor: pointer;
+    position: relative;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.notification-btn:hover {
+    background: var(--bg-hover);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background-color: #10b981; /* Green dot */
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--bg-surface);
+}
+
+.notification-panel {
+    position: absolute;
+    top: 120%;
+    right: 0;
+    width: 320px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.notification-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--navy-light);
+}
+
+.notification-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color:#fff
+}
+
+.notification-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 16px;
+    border-bottom: 1px solid var(--navy-light);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-reason {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.notification-message {
+    font-size: 13px;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.notification-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.notification-empty {
+    padding: 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
 }

@@ -232,16 +232,16 @@ public class LoanService {
         List<User> copyOfManagers = new ArrayList<>(managers);
         Collections.shuffle(copyOfManagers);
 
-//        // FIX 3: Safe execution limits prevent IndexOutOfBoundsException if department only holds 1 manager
-//        notificationService.sendAll(requester.getUserId(), copyOfManagers.get(0).getEmail(),
-//                NotificationReason.LOAN_REQUEST,
-//                "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-//
-//        if (copyOfManagers.size() > 1) {
-//            notificationService.sendAll(requester.getUserId(), copyOfManagers.get(1).getEmail(),
-//                    NotificationReason.LOAN_REQUEST,
-//                    "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-//        }
+        // FIX 3: Safe execution limits prevent IndexOutOfBoundsException if department only holds 1 manager
+        notificationService.sendAll(copyOfManagers.get(0).getUserId(), copyOfManagers.get(0).getEmail(),
+                NotificationReason.LOAN_REQUEST,
+                "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
+
+        if (copyOfManagers.size() > 1) {
+            notificationService.sendAll(copyOfManagers.get(1).getUserId(), copyOfManagers.get(1).getEmail(),
+                    NotificationReason.LOAN_REQUEST,
+                    "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
+        }
 
         Loan loan = Loan.builder()
                 .asset(asset)
