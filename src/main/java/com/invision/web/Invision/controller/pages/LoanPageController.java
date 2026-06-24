@@ -19,6 +19,8 @@ public class LoanPageController {
 
         model.addAttribute("currentUri", "/loans");
         model.addAttribute("statusFilter", status);
+        model.addAttribute("loanFilter", "OVERDUE");
+        model.addAttribute("department", userDetails.getDepartment());
 
         model.addAttribute("currentUserId", userDetails.getId());
         model.addAttribute("currentUserRole",
@@ -30,4 +32,5 @@ public class LoanPageController {
 
         return "loans/loan";
     }
+
 }

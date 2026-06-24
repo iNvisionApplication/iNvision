@@ -49,9 +49,10 @@ public class LoanService {
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getAllOverdueLoans(){
-        return loanRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), LoanStatus.RETURNED)
+        return loanRepository.findByDueDateBeforeAndStatus(LocalDateTime.now(), LoanStatus.APPROVED)
                 .stream()
                 .map(loanMapper::loanToLoanResponseDTO)
                 .toList();
@@ -120,7 +121,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_MANAGER')") //only Managers can update loanStatus
     @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
         User manager = getAuthenticatedUser();
@@ -128,6 +129,12 @@ public class LoanService {
 
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
+
+        if (manager.getDepartment() != loan.getUser().getDepartment()) {
+            throw new InvalidLoanStatusChangeException(
+                    "Managers can only approve or reject loans from their own department"
+            );
+        }
 
         if (loan.getDescription() == null) {
             loan.setDescription("No description provided");
@@ -260,7 +267,20 @@ public class LoanService {
     }
 
     public Page<LoanResponseDTO> getAllLoansByStatus(LoanStatus status, int page, int size) {
+        User currentUser = getAuthenticatedUser();
         Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        Page<Loan> loans;
+
+        if (currentUser.getRole() == Role.MANAGER) {
+            loans = loanRepository.findByStatusAndUserDepartment(
+                    status,
+                    currentUser.getDepartment(),
+                    pageable
+            );
+        } else {
+            loans = loanRepository.findByStatus(status, pageable);
+        }
 
         return loanRepository.findByStatus(status, pageable)
                 .map(loanMapper::loanToLoanResponseDTO);
@@ -324,8 +344,20 @@ public class LoanService {
     // Inside LoanService.java
 
     public Page<LoanResponseDTO> getAllLoans(int page, int size) {
+        User currentUser = getAuthenticatedUser();
         // Sort transactions so the newest requests appear at the top of the admin list
         Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+
+        Page<Loan> loans;
+
+        if (currentUser.getRole() == Role.MANAGER) {
+            loans = loanRepository.findByUserDepartment(
+                    currentUser.getDepartment(),
+                    pageable
+            );
+        } else {
+            loans = loanRepository.findAll(pageable);
+        }
 
         return loanRepository.findAll(pageable)
                 .map(loanMapper::loanToLoanResponseDTO);

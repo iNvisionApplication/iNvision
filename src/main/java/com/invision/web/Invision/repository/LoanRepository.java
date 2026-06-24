@@ -34,6 +34,13 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     @EntityGraph(attributePaths = {"asset", "user"})
     List<Loan> findByDueDateBeforeAndStatusNot(LocalDateTime now, LoanStatus status);
 
+    // Method to return only approved OVERDUE loans
+    @EntityGraph(attributePaths = {"asset", "user"})
+    List<Loan> findByDueDateBeforeAndStatus(
+            LocalDateTime now,
+            LoanStatus status
+    );
+
     @EntityGraph(attributePaths = {"asset", "user"})
     List<Loan> findByDueDateBeforeAndStatusNotAndUserDepartment(
             LocalDateTime now,
@@ -59,7 +66,7 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     long countByStatus(LoanStatus status);
 
     // DEPT. Method
-    Page<Loan> findByUserDepartment(Department department, Pageable pageable);
+    //Page<Loan> findByUserDepartment(Department department, Pageable pageable);
 
     long countByStatusAndDueDateBefore(
             LoanStatus status,
@@ -71,6 +78,19 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     @EntityGraph(attributePaths = {"asset", "user"})
     Page<Loan> findByUserUserId(Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"asset", "user"})
+    Page<Loan> findByUserDepartment(
+            Department department,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"asset", "user"})
+    Page<Loan> findByStatusAndUserDepartment(
+            LoanStatus status,
+            Department department,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {"asset", "user"})
     Page<Loan> findByStatus(LoanStatus status, Pageable pageable);

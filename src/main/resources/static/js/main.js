@@ -124,6 +124,8 @@ function loadUserLoans(pageNumber) {
     const role = getCurrentUserRole();
     const params = new URLSearchParams(window.location.search);
     const statusFilter = params.get("status");
+    const userDepartment = params.get("userDepartment");
+    const filter = params.get("filter");
     const tableBody = document.getElementById("loanHistoryBody");
     const tableWrapper = tableBody?.closest('.table-wrapper');
 
@@ -131,14 +133,22 @@ function loadUserLoans(pageNumber) {
 
     let url;
     if (role === "ADMIN" || role === "MANAGER") {
-        if (statusFilter === "PENDING") {
-            url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
-        } else if (role === "MANAGER") {
-            url = `/api/loans/department?page=${pageNumber}&size=${getLoansPageSize()}`;
-        } else {
-            url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
-        }
+
+      if (statusFilter === "PENDING") {
+          url = `/api/loans/status?status=PENDING&page=${pageNumber}&size=${getLoansPageSize()}`;
+      } 
+      else if (statusFilter === "OVERDUE") {
+          url = `/api/loans/overdue?page=${pageNumber}&size=${getLoansPageSize()}`;
+      }
+      else if (role === "MANAGER") {
+          url = `/api/loans/department?page=${pageNumber}&size=${getLoansPageSize()}`;
+      }
+      else {
+          url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
+      }
+
     } else {
+        // Borrower routing falls through here
         if (!userId) return;
         url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
     }
@@ -167,12 +177,14 @@ function loadUserLoans(pageNumber) {
                 const row = document.createElement("tr");
                 let actionsHtml = "";
 
-                if (role === "ADMIN" || role === "MANAGER") {
+                if (role === "MANAGER" || role === "ADMIN") {
                     if (loan.status === "PENDING") {
-                        actionsHtml = `<button class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>`;
-                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
-                        actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
-                    } else {
+                        actionsHtml = `<button id="approve-btn-${loan.loanId}" class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>
+                                        <button class="btn btn-sm btn-danger" onclick="rejectLoan(${loan.loanId})">Reject</button>`;
+                    }
+                    else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                          actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
+                      } else {
                         actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
                     }
                 } else {
@@ -190,6 +202,7 @@ function loadUserLoans(pageNumber) {
                 row.innerHTML = `
                     <td><strong>#${loan.loanId || "N/A"}</strong></td>
                     <td>${loan.assetTitle || "N/A"}</td>
+                    <td><strong>${loan.borrowerName || "N/A"}</strong></td>
                     <td>${loan.description || "N/A"}</td>
                     <td>${formatDateTime(loan.requestDate)}</td>
                     <td>${formatDateTime(loan.dueDate)}</td>
@@ -212,6 +225,16 @@ async function approveLoan(loanId) {
     const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
     const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
+    const approveBtn = document.getElementById(`approve-btn-${loanId}`);
+    let originalText = "Approve";
+
+    // Lock button and show spinner
+    if (approveBtn) {
+        originalText = approveBtn.innerHTML;
+        approveBtn.disabled = true;
+        approveBtn.innerHTML = `<span class="btn-spinner"></span> Approving...`;
+    }
+
     try {
         const response = await fetch(`/api/loans/${loanId}`, {
             method: "PATCH",
@@ -224,8 +247,52 @@ async function approveLoan(loanId) {
 
         if (!response.ok) throw new Error();
         loadUserLoans(currentLoansPage);
+        // Note: loadUserLoans redraws the whole table, clearing the spinner automatically on success
     } catch (error) {
+        // Unlock button if the request fails
+        if (approveBtn) {
+            approveBtn.disabled = false;
+            approveBtn.innerHTML = originalText;
+        }
         showErrorModal("Approval Failed", "Unable to approve this loan request.");
+    }
+}
+
+async function rejectLoan(loanId) {
+
+    const token = document
+        .querySelector("meta[name='_csrf']")
+        .getAttribute("content");
+
+    const header = document
+        .querySelector("meta[name='_csrf_header']")
+        .getAttribute("content");
+
+    try {
+
+        const response = await fetch(`/api/loans/${loanId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                [header]: token
+            },
+            body: JSON.stringify({
+                loanStatus: "REJECTED"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        loadUserLoans(currentLoansPage);
+
+    } catch (error) {
+
+        showErrorModal(
+            "Rejection Failed",
+            "Unable to reject this loan request."
+        );
     }
 }
 
@@ -236,6 +303,7 @@ function submitLoanRequest(event) {
     const assetId = document.getElementById("selectedAssetId")?.value;
     const loanPeriod = document.getElementById("loanPeriod")?.value;
     const description = document.getElementById("description")?.value;
+    const submitBtn = document.getElementById("submitLoanBtn");
 
     if (!assetId) {
         showErrorModal("Selection Required", "Please select an asset from the active catalog inventory first.");
@@ -260,6 +328,14 @@ function submitLoanRequest(event) {
         loanPeriod: loanPeriod
     };
 
+    // Lock button and show spinner
+    let originalText = "Submit Request";
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="btn-spinner"></span> Processing...`;
+    }
+
     fetch("/api/loans", {
         method: "POST",
         headers: {
@@ -269,29 +345,35 @@ function submitLoanRequest(event) {
         },
         body: JSON.stringify(loanRequest)
     })
-        .then(async response => {
-            const responseText = await response.text();
-            if (!response.ok) {
-                let errorData;
-                try {
-                    errorData = JSON.parse(responseText);
-                } catch (e) {
-                    errorData = { message: responseText || `Status ${response.status}: Server operational failure.` };
-                }
-                throw errorData;
+    .then(async response => {
+        const responseText = await response.text();
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = JSON.parse(responseText);
+            } catch (e) {
+                errorData = { message: responseText || `Status ${response.status}: Server operational failure.` };
             }
-            return responseText ? JSON.parse(responseText) : {};
-        })
-        .then(() => {
-            window.location.href = "/loans";
-        })
-        .catch(error => {
-            if (error.code === "BAD_LOAN_REQUEST") {
-                showErrorModal("Active Request Found", "You already have a pending or active loan for this asset.");
-            } else {
-                showErrorModal("Submission Refused", error.message || "An unresolved network transmission layout conflict has occurred.");
-            }
-        });
+            throw errorData;
+        }
+        return responseText ? JSON.parse(responseText) : {};
+    })
+    .then(() => {
+        window.location.href = "/loans";
+    })
+    .catch(error => {
+        // Unlock button and remove spinner on failure
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+
+        if (error.code === "BAD_LOAN_REQUEST") {
+            showErrorModal("Active Request Found", "You already have a pending or active loan for this asset.");
+        } else {
+            showErrorModal("Submission Refused", error.message || "An unresolved network transmission layout conflict has occurred.");
+        }
+    });
 }
 
 function executeLoanAction(loanId, actionEndpoint) {
@@ -996,3 +1078,50 @@ function showToast(message) {
         toast.addEventListener("animationend", () => toast.remove());
     }, 4000);
 }
+
+// ================= ASK ME CHATBOT =================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("askMeToggle");
+    const closeBtn = document.getElementById("askMeClose");
+    const askMeForm = document.getElementById("askMeForm");
+    const askMeInput = document.getElementById("askMeInput");
+    const askMeMessages = document.getElementById("askMeMessages");
+
+    if (!toggleBtn || !closeBtn || !askMeForm || !askMeInput || !askMeMessages) return;
+
+    toggleBtn.addEventListener("click", () => {
+        document.body.classList.add("askme-open");
+        askMeInput.focus();
+    });
+
+    closeBtn.addEventListener("click", () => {
+        document.body.classList.remove("askme-open");
+    });
+
+    askMeForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const question = askMeInput.value.trim();
+        if (!question) return;
+
+        addAskMeMessage(question, "user");
+        askMeInput.value = "";
+
+        setTimeout(() => {
+            addAskMeMessage(
+                "This is the IVY iNVision assistant. Backend AI connection will be added next.",
+                "bot"
+            );
+        }, 400);
+    });
+
+    function addAskMeMessage(text, sender) {
+        const message = document.createElement("div");
+        message.className = `askme-message ${sender}`;
+        message.textContent = text;
+
+        askMeMessages.appendChild(message);
+        askMeMessages.scrollTop = askMeMessages.scrollHeight;
+    }
+});
