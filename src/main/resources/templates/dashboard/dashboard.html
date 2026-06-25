@@ -8,16 +8,20 @@
 </head>
 <body>
 <section>
-    <!-- all page content goes here -->
-    <div class="page-header">
-        <div class="page-heading">
+
+    <video autoplay loop muted playsinline class="dashboard-video-bg">
+        <source th:src="@{/video/bg.mp4}" type="video/mp4">
+    </video>
+    <div class="dashboard-video-overlay"></div>
+
+    <div class="page-header" style="position: relative; z-index: 1;">
+        <div class="page-heading" style="color: white;">
             Overview
-            <span>System summary and recent activity</span>
+            <span style="color: rgba(255,255,255,0.7);">System summary and recent activity</span>
         </div>
     </div>
 
-    <div class="stats-grid">
-
+    <div class="stats-grid" style="position: relative; z-index: 1;">
         <a th:href="@{/assets}" class="stat-link">
             <div class="stat-card navy">
                 <div class="stat-label">Total Assets</div>
@@ -47,6 +51,132 @@
             </div>
         </a>
     </div>
+
+    <input type="hidden" id="chart-total-assets" th:value="${totalAssets ?: 0}">
+    <input type="hidden" id="chart-avail-assets" th:value="${availableAssets ?: 0}">
+    <input type="hidden" id="chart-active-loans" th:value="${activeLoans ?: 0}">
+    <input type="hidden" id="chart-overdue-loans" th:value="${overdueLoans ?: 0}">
+    <input type="hidden" id="chart-pending-loans" th:value="${pendingRequests ?: 0}">
+
+    <div class="charts-grid" style="position: relative; z-index: 1; margin-top: 64px;">
+        <div class="chart-card card">
+            <div class="card-header"><h3 class="card-title">Asset Availability</h3></div>
+            <div class="card-body" style="height: 250px;">
+                <canvas id="assetAvailabilityChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card card">
+            <div class="card-header"><h3 class="card-title">Loan Distribution</h3></div>
+            <div class="card-body" style="height: 250px;">
+                <canvas id="loanStatusChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card card">
+            <div class="card-header"><h3 class="card-title">Inventory by Category</h3></div>
+            <div class="card-body" style="height: 250px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            function getVal(id) {
+                var el = document.getElementById(id);
+                return el && el.value ? parseInt(el.value) : 0;
+            }
+
+            var availAssets = getVal('chart-avail-assets');
+            var loanedAssets = getVal('chart-total-assets') - availAssets;
+            var overdueLoans = getVal('chart-overdue-loans');
+            var healthyLoans = getVal('chart-active-loans') - overdueLoans;
+            var pendingLoans = getVal('chart-pending-loans');
+
+            var colors = {
+                navy: '#0d1b3e', steel: '#6b89b8', green: '#1a7a52',
+                red: '#b83232', amber: '#b87320', gray: 'rgba(13,27,62,0.1)'
+            };
+
+            // Global settings
+            Chart.defaults.font.family = "'DM Sans', sans-serif";
+            Chart.defaults.color = '#4a5878';
+            Chart.defaults.plugins.legend.position = 'bottom';
+            Chart.defaults.maintainAspectRatio = false;
+
+            // 💡 NEW: Global Animation Settings for a premium feel
+            Chart.defaults.animation.duration = 1500; // 1.5 second animation
+            Chart.defaults.animation.easing = 'easeOutQuart'; // Smooth deceleration
+
+            // Chart 1: Availability
+            var ctx1 = document.getElementById('assetAvailabilityChart');
+            if (ctx1) {
+                var hasAssets = (availAssets > 0 || loanedAssets > 0);
+                new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: hasAssets ? ['Available', 'In Use'] : ['No Data'],
+                        datasets: [{
+                            data: hasAssets ? [availAssets, loanedAssets] : [1],
+                            backgroundColor: hasAssets ? [colors.green, colors.steel] : [colors.gray],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        cutout: '75%',
+                        // 💡 NEW: Make it pop and spin in
+                        animation: { animateScale: true, animateRotate: true }
+                    }
+                });
+            }
+
+            // Chart 2: Loans
+            var ctx2 = document.getElementById('loanStatusChart');
+            if (ctx2) {
+                var hasLoans = (healthyLoans > 0 || overdueLoans > 0 || pendingLoans > 0);
+                new Chart(ctx2, {
+                    type: 'pie',
+                    data: {
+                        labels: hasLoans ? ['Healthy', 'Overdue', 'Pending'] : ['No Data'],
+                        datasets: [{
+                            data: hasLoans ? [healthyLoans > 0 ? healthyLoans : 0, overdueLoans, pendingLoans] : [1],
+                            backgroundColor: hasLoans ? [colors.navy, colors.red, colors.amber] : [colors.gray],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        // 💡 NEW: Make it pop and spin in
+                        animation: { animateScale: true, animateRotate: true }
+                    }
+                });
+            }
+
+            // Chart 3: Categories
+            var ctx3 = document.getElementById('categoryChart');
+            if (ctx3) {
+                new Chart(ctx3, {
+                    type: 'polarArea',
+                    data: {
+                        labels: ['Laptops', 'Audio', 'Cameras'],
+                        datasets: [{
+                            data: [15, 8, 22],
+                            backgroundColor: [
+                                'rgba(13, 27, 62, 0.7)', 'rgba(107, 137, 184, 0.7)',
+                                'rgba(26, 122, 82, 0.7)'
+                            ],
+                            borderWidth: 1, borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        scales: { r: { display: false } },
+                        // 💡 NEW: Make it pop and spin in
+                        animation: { animateScale: true, animateRotate: true }
+                    }
+                });
+            }
+        });
+    </script>
 </section>
 </body>
 </html>
