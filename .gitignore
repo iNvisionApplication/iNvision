@@ -82,3 +82,9 @@ spring.log
 # Uploads (Optional)
 # =========================
 uploads/
+
+
+# =========================
+# Secrets
+# =========================
+src/main/resources/application-local.properties

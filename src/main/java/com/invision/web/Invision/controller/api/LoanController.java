@@ -86,6 +86,11 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
     }
 
+    @GetMapping("/{status}")
+    public ResponseEntity<List<LoanResponseDTO>> getDepartmentLoansByStatus(@PathVariable LoanStatus status){
+        return ResponseEntity.ok(loanService.getDepartmentLoansByStatus(status));
+    }
+
     //Borrower
     @GetMapping("/my_loans/overdue")
     public ResponseEntity<List<LoanResponseDTO>> getCurrentUserOverdueLoans(){

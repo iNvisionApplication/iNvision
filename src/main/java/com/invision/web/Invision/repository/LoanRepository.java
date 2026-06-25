@@ -32,6 +32,9 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     );
 
     @EntityGraph(attributePaths = {"asset", "user"})
+    List<Loan> findByUserDepartmentAndStatus(Department department, LoanStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "user"})
     List<Loan> findByDueDateBeforeAndStatusNot(LocalDateTime now, LoanStatus status);
 
     // Method to return only approved OVERDUE loans

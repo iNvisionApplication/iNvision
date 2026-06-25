@@ -204,6 +204,12 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(saved);
     }
 
+    @PreAuthorize("hasRole ('ROLE_MANAGER')")
+    public List<LoanResponseDTO> getDepartmentLoansByStatus(LoanStatus status){
+        User manager = getAuthenticatedUser();
+        return loanRepository.findByUserDepartmentAndStatus(manager.getDepartment(),status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
+    }
+
     @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
