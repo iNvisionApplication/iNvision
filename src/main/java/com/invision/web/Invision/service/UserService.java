@@ -4,7 +4,6 @@ import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.UserLoginDTO;
 import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.dto.UserUpdateDTO;
-import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.EntityType;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.exception.user.UserNotFoundException;
@@ -47,7 +46,7 @@ public class UserService {
     }
 
     @Transactional
-    public String registerUser(UserRegistrationDTO request){
+    public void registerUser(UserRegistrationDTO request){
 
         User user = new User();
 
@@ -58,7 +57,6 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.BORROWER);
         userRepository.save(user);
-        return "User " + user.getEmail() + " registered successfully as " + user.getRole();
     }
 
     @Transactional
