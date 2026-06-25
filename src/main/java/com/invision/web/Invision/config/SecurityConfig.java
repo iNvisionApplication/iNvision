@@ -33,8 +33,9 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/assets/**",
                                 "/api/loans/**",
-                                "/api/users/**",
-                                "/users/**",
+                                //"/api/users/**",
+                                //"/users/**",
+                                "/api/notification/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/forgot-password/**"
@@ -48,6 +49,7 @@ public class SecurityConfig {
                                         "/", // 💡 ADD THIS LINE: Explicitly opens access to your root index landing page view
                                         "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                         "/error", "/error/**",
+                                        "/api/notification/**",
                                         "/login", "/register",
                                         "/forgot-password/**",
                                         "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
@@ -88,7 +90,7 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, exception) -> {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 })
-        );
+                );
 
 
         return http.build();
