@@ -1,5 +1,6 @@
 package com.invision.web.Invision.exception;
 
+import com.azure.core.exception.HttpResponseException;
 import com.invision.web.Invision.dto.ErrorResponseDTO;
 import com.invision.web.Invision.exception.asset.BulkImportException;
 import com.invision.web.Invision.exception.asset.DuplicateSerialNumberException;
@@ -170,6 +171,24 @@ public class GlobalExceptionHandler {
                         request.getDescription(false),
                         LocalDateTime.now())
         );
+    }
+
+    @ExceptionHandler(HttpResponseException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAzureAiException(HttpResponseException ex, WebRequest request) {
+        String cleanMessage = "An unexpected error occurred with the AI provider.";
+
+        // Check if this is the Azure Content Filter violation
+        if (ex.getMessage() != null && ex.getMessage().contains("content_filter")) {
+            cleanMessage = "Your message was blocked by the AI's content management safety policy. Please modify your prompt and try again.";
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(
+                400,
+                "AI_POLICY_VIOLATION",
+                cleanMessage,
+                request.getDescription(false),
+                LocalDateTime.now()
+        ));
     }
 
 //    @ExceptionHandler(AccessDeniedException.class)

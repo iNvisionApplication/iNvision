@@ -331,8 +331,8 @@ ul {
 .user-avatar {
     width: 36px;
     height: 36px;
-    background: rgba(107, 137, 184, 0.2);
-    border: 1px solid rgba(107, 137, 184, 0.4);
+    background: var(--navy);
+    border: 2px solid var(--navy);
     border-radius: var(--radius);
     display: flex;
     align-items: center;
@@ -353,7 +353,7 @@ ul {
 .user-name {
     font-size: 13px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--navy);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -361,7 +361,7 @@ ul {
 
 .user-role {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--navy);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-top: 1px;
@@ -2674,3 +2674,305 @@ body.askme-open .askme-toggle {
     font-size: 13px;
     color: var(--text-muted);
 }
+
+/* =============================================
+   DASHBOARD BACKGROUND VIDEO
+   ============================================= */
+.dashboard-video-bg {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    width: calc(100vw - var(--sidebar-width));
+    height: 100vh;
+    object-fit: cover; /* Ensures the video scales without stretching */
+    z-index: -2; /* Pushes it behind all your content */
+    pointer-events: none; /* Stops the video from blocking your mouse clicks */
+}
+
+.dashboard-video-overlay {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    width: calc(100vw - var(--sidebar-width));
+    height: 100vh;
+    background: rgba(13, 27, 62, 0.65); /* A navy blue tint. Increase 0.65 to make it darker */
+    backdrop-filter: blur(3px); /* Optional: adds a sleek blur to the video */
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Fix for mobile screens when the sidebar hides */
+@media (max-width: 768px) {
+    .dashboard-video-bg,
+    .dashboard-video-overlay {
+        left: 0;
+        width: 100vw;
+    }
+}
+
+/* =============================================
+   DASHBOARD CHARTS
+   ============================================= */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.chart-card {
+    background: rgba(255, 255, 255, 0.92); /* Slightly transparent to see video */
+    backdrop-filter: blur(8px); /* Blurs the video behind the card */
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-card .card-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 260px; /* Gives the charts room to breathe */
+    position: relative;
+}
+
+/* Make sure the canvas doesn't overflow */
+.chart-card canvas {
+    max-width: 100%;
+    max-height: 240px;
+}
+
+```javascript
+// ================= ASK ME CHATBOT =================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("askMeToggle");
+    const closeBtn = document.getElementById("askMeClose");
+    const askMeForm = document.getElementById("askMeForm");
+    const askMeInput = document.getElementById("askMeInput");
+    const askMeMessages = document.getElementById("askMeMessages");
+
+    if (!toggleBtn || !closeBtn || !askMeForm || !askMeInput || !askMeMessages) return;
+
+    // Open/Close Panel
+    toggleBtn.addEventListener("click", () => {
+        document.body.classList.add("askme-open");
+        askMeInput.focus();
+    });
+
+    closeBtn.addEventListener("click", () => {
+        document.body.classList.remove("askme-open");
+    });
+
+    // Handle Form Submission
+    askMeForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const question = askMeInput.value.trim();
+        if (!question) return;
+
+        // Instantly show user message
+        addAskMeMessage(question, "user");
+        askMeInput.value = "";
+
+        // Show a "Typing..." indicator
+        const typingId = "typing-" + Date.now();
+        addTypingIndicator(typingId);
+
+        // Fetch CSRF Tokens
+        const tokenElement = document.querySelector("meta[name='_csrf']");
+        const headerElement = document.querySelector("meta[name='_csrf_header']");
+        const token = tokenElement ? tokenElement.getAttribute("content") : "";
+        const header = headerElement ? headerElement.getAttribute("content") : "";
+
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain", // Matches @RequestBody String
+                    [header]: token
+                },
+                body: question
+            });
+
+            removeTypingIndicator(typingId);
+
+            if (!response.ok) {
+                throw new Error(`Server returned status ${response.status}`);
+            }
+
+            // Show AI response
+            const botResponse = await response.text();
+            addAskMeMessage(botResponse, "bot");
+
+        } catch (error) {
+            console.error("Chat communication failure:", error);
+            removeTypingIndicator(typingId);
+
+            // Graceful error handling using the existing global modal
+            if (typeof showErrorModal === "function") {
+                showErrorModal(
+                    "AI Connection Failed",
+                    "Ivy is currently unable to reach the neural core. Please check your network connection or try again later."
+                );
+            } else {
+                addAskMeMessage("Error: Unable to connect to backend AI.", "bot error");
+            }
+        }
+    });
+
+    // Helper: Add Message to UI
+    function addAskMeMessage(text, senderClass) {
+        const message = document.createElement("div");
+        message.className = `askme-message ${senderClass}`;
+        message.textContent = text;
+        askMeMessages.appendChild(message);
+        askMeMessages.scrollTop = askMeMessages.scrollHeight;
+    }
+
+    // Helper: Add Typing Dots
+    function addTypingIndicator(id) {
+        const indicator = document.createElement("div");
+        indicator.className = "askme-message bot typing-indicator";
+        indicator.id = id;
+        indicator.innerHTML = `
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+        `;
+        askMeMessages.appendChild(indicator);
+        askMeMessages.scrollTop = askMeMessages.scrollHeight;
+    }
+
+    // Helper: Remove Typing Dots
+    function removeTypingIndicator(id) {
+        const indicator = document.getElementById(id);
+        if (indicator) indicator.remove();
+    }
+});
+
+/* =============================================
+   CHATBOT (Ivy) STYLING
+   ============================================= */
+
+.askme-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+}
+
+.askme-message {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    box-shadow: 0 2px 6px rgba(13, 27, 62, 0.04);
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: bottom center;
+}
+
+.askme-message.bot {
+    align-self: flex-start;
+    background: #ffffff;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+}
+
+.askme-message.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+}
+
+.askme-message.error {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(184, 50, 50, 0.2);
+    font-weight: 500;
+}
+
+/* Typing Indicator Animations */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 14px 18px;
+    align-items: center;
+    width: fit-content;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes popIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Form Area Stylings */
+.askme-form {
+    padding: 16px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.askme-form input {
+    flex: 1;
+    border: 1px solid var(--border-light);
+    background: var(--bg-base);
+    border-radius: 999px;
+    padding: 12px 18px;
+    outline: none;
+    font-size: 13.5px;
+    transition: all 0.2s ease;
+}
+
+.askme-form input:focus {
+    border-color: var(--steel);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px var(--steel-dim);
+}
+
+.askme-form button {
+    border: none;
+    border-radius: 999px;
+    background: var(--navy);
+    color: white;
+    padding: 0 20px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.askme-form button:hover {
+    background: var(--navy-mid);
+}
+
+.askme-form button:active {
+    transform: scale(0.96);
+}
+

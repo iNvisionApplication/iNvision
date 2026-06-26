@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+
 </head>
 <body>
 
@@ -30,23 +31,10 @@
         </div>
     </a>
 
-    <div class="sidebar-user">
-        <div class="user-avatar"
-             th:text="${#authentication != null ? #authentication.name.substring(0,1).toUpperCase() : 'U'}">
-            U
-        </div>
-        <div class="user-info">
-            <span class="user-name" sec:authentication="name">User</span>
-            <span class="user-role">
-                <span sec:authorize="hasRole('ADMIN')">Administrator</span>
-                <span sec:authorize="hasRole('MANAGER')">Manager</span>
-                <span sec:authorize="hasRole('BORROWER')">Borrower</span>
-            </span>
-        </div>
-    </div>
+
 
     <ul class="nav-links">
-        <li class="nav-section-label">Main</li>
+<!--        <li class="nav-section-label">Main</li>-->
         <li>
             <a th:href="@{/dashboard}" th:classappend="${currentUri == ('/dashboard') ? 'active' : ''}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
@@ -128,6 +116,20 @@
                 <span></span><span></span><span></span>
             </button>
             <h1 class="page-title" th:replace="${title}">Page</h1>
+            <div class="sidebar-user">
+                <div class="user-avatar"
+                     th:text="${#authentication != null ? #authentication.name.substring(0,1).toUpperCase() : 'U'}">
+                    U
+                </div>
+                <div class="user-info">
+                    <span class="user-name" sec:authentication="name">User</span>
+                    <span class="user-role">
+                        <span sec:authorize="hasRole('ADMIN')"><strong>Administrator</strong></span>
+                        <span sec:authorize="hasRole('MANAGER')"><strong>Manager</strong></span>
+                        <span sec:authorize="hasRole('BORROWER')"><strong>Staff</strong></span>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <div class="topbar-right">
@@ -201,6 +203,18 @@
 <button id="askMeToggle" class="askme-toggle" type="button">
     Ask Ivy
 </button>
+
+<div id="errorModalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+        <h3 class="modal-title" id="errorModalTitle">System Alert</h3>
+        <div class="modal-body" id="errorModalBody">
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="closeErrorModalBtn" class="btn btn-primary">Acknowledge</button>
+        </div>
+    </div>
+</div>
+
 
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/notifications.js}"></script>

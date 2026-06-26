@@ -9,6 +9,7 @@ import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.service.LoanService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,7 @@ public class LoanController {
     @PatchMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> updateLoanStatus(
             @PathVariable("id") Long loanId,
-            @RequestBody LoanStatusDTO actionDTO) {
+            @RequestBody LoanStatusDTO actionDTO) throws BadRequestException {
 
         return ResponseEntity.ok(loanService.updateLoanStatus(loanId, actionDTO));
     }
@@ -84,6 +85,11 @@ public class LoanController {
     @GetMapping("/overdue/{userId}")
     public ResponseEntity<List<LoanResponseDTO>> getUserOverDueLoans(@PathVariable Long userId){
         return ResponseEntity.ok(loanService.getUserOverdueLoans(userId));
+    }
+
+    @GetMapping("/{status}")
+    public ResponseEntity<List<LoanResponseDTO>> getDepartmentLoansByStatus(@PathVariable LoanStatus status){
+        return ResponseEntity.ok(loanService.getDepartmentLoansByStatus(status));
     }
 
     //Borrower

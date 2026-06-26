@@ -60,12 +60,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" for="serialNumber">Serial Number</label>
-                            <input class="form-control" type="text" id="serialNumber" name="serialNumber" placeholder="e.g., C02X81K8JG5H" required />
+                            <input class="form-control" type="text" id="serialNumber" name="serialNumber" placeholder="e.g., C02X81K8JG5H (MUST BE UNIQUE)" required />
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="category">Category</label>
                             <select class="form-control" id="category" name="category" required>
-<!--                                <option value="ELECTRONICS">Laptops & Computing</option>-->
                                 <option value="AUDIO">Audio Devices / Mics / Headsets</option>
                                 <option value="CAMERA">Cameras & Video Equipment</option>
                                 <option value="LAPTOP">Laptops</option>
@@ -77,9 +76,7 @@
                         <div class="form-group">
                             <label class="form-label" for="condition">Initial Condition</label>
                             <select class="form-control" id="condition" name="condition" required>
-<!--                                <option value="NEW">Brand New / Factory Boxed</option>-->
                                 <option value="GOOD">Good / Lightly Used</option>
-<!--                                <option value="FAIR">Fair / Functional</option>-->
                                 <option value="DAMAGED">Damaged / Requires Repair</option>
                             </select>
                         </div>
@@ -170,6 +167,17 @@
             </div>
 
         </div> </div>
+</div>
+
+<div id="errorModalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+        <h3 class="modal-title" id="errorModalTitle">System Alert</h3>
+        <div class="modal-body" id="errorModalBody">
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="closeErrorModalBtn" class="btn btn-primary">Acknowledge</button>
+        </div>
+    </div>
 </div>
 
 <script>
