@@ -1118,6 +1118,47 @@ document.addEventListener("DOMContentLoaded", () => {
         const header = headerElement ? headerElement.getAttribute("content") : "";
 
         try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain", // Matches @RequestBody String
+                    [header]: token
+                },
+                body: question
+            });
+
+            removeTypingIndicator(typingId);
+
+            if (!response.ok) {
+                throw new Error(`Server returned status ${response.status}`);
+            }
+
+            // Show AI response
+            const botResponse = await response.text();
+            addAskMeMessage(botResponse, "bot");
+
+        }
+        catch (error) {
+                    console.error("Chat communication failure:", error);
+                    removeTypingIndicator(typingId);
+
+
+                    showErrorModal(
+                        "Ivy is on her periods and can't talk.",
+                        "Please check your network connection or try again later."
+                    );
+        }
+        // Show a "Typing..." indicator
+        const typingId = "typing-" + Date.now();
+        addTypingIndicator(typingId);
+
+        // Fetch CSRF Tokens
+        const tokenElement = document.querySelector("meta[name='_csrf']");
+        const headerElement = document.querySelector("meta[name='_csrf_header']");
+        const token = tokenElement ? tokenElement.getAttribute("content") : "";
+        const header = headerElement ? headerElement.getAttribute("content") : "";
+
+        try {
                     const response = await fetch("/api/chat", {
                         method: "POST",
                         headers: {
