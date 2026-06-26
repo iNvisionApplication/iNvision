@@ -1097,117 +1097,76 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Handle Form Submission
-    askMeForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+        askMeForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-        const question = askMeInput.value.trim();
-        if (!question) return;
+            const question = askMeInput.value.trim();
+            if (!question) return;
 
-        // Instantly show user message
-        addAskMeMessage(question, "user");
-        askMeInput.value = "";
+            // Instantly show user message
+            addAskMeMessage(question, "user");
+            askMeInput.value = "";
 
-        // Show a "Typing..." indicator
-        const typingId = "typing-" + Date.now();
-        addTypingIndicator(typingId);
+            // Show a "Typing..." indicator
+            const typingId = "typing-" + Date.now();
+            addTypingIndicator(typingId);
 
-        // Fetch CSRF Tokens
-        const tokenElement = document.querySelector("meta[name='_csrf']");
-        const headerElement = document.querySelector("meta[name='_csrf_header']");
-        const token = tokenElement ? tokenElement.getAttribute("content") : "";
-        const header = headerElement ? headerElement.getAttribute("content") : "";
+            // Fetch CSRF Tokens
+            const tokenElement = document.querySelector("meta[name='_csrf']");
+            const headerElement = document.querySelector("meta[name='_csrf_header']");
+            const token = tokenElement ? tokenElement.getAttribute("content") : "";
+            const header = headerElement ? headerElement.getAttribute("content") : "";
 
-        try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "text/plain", // Matches @RequestBody String
-                    [header]: token
-                },
-                body: question
-            });
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain", // Matches @RequestBody String
+                        [header]: token
+                    },
+                    body: question
+                });
 
-            removeTypingIndicator(typingId);
+                removeTypingIndicator(typingId);
 
-            if (!response.ok) {
-                throw new Error(`Server returned status ${response.status}`);
-            }
+                // Handle custom backend error messages dynamically
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = "An unexpected system error occurred.";
 
-            // Show AI response
-            const botResponse = await response.text();
-            addAskMeMessage(botResponse, "bot");
-
-        }
-        catch (error) {
-                    console.error("Chat communication failure:", error);
-                    removeTypingIndicator(typingId);
-
-
-                    showErrorModal(
-                        "Ivy is on her periods and can't talk.",
-                        "Please check your network connection or try again later."
-                    );
-        }
-        // Show a "Typing..." indicator
-        const typingId = "typing-" + Date.now();
-        addTypingIndicator(typingId);
-
-        // Fetch CSRF Tokens
-        const tokenElement = document.querySelector("meta[name='_csrf']");
-        const headerElement = document.querySelector("meta[name='_csrf_header']");
-        const token = tokenElement ? tokenElement.getAttribute("content") : "";
-        const header = headerElement ? headerElement.getAttribute("content") : "";
-
-        try {
-                    const response = await fetch("/api/chat", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "text/plain",
-                            [header]: token
-                        },
-                        body: question
-                    });
-
-                    removeTypingIndicator(typingId);
-
-                    // 💡 Handle custom backend error messages dynamically
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        let errorMessage = "An unexpected system error occurred.";
-
-                        try {
-                            // Try to parse the ErrorResponseDTO from the backend
-                            const errorJson = JSON.parse(errorText);
-                            if (errorJson.message) {
-                                errorMessage = errorJson.message;
-                            }
-                        } catch (e) {
-                            // Fallback if the server didn't send JSON
-                            errorMessage = `Server responded with status ${response.status}`;
+                    try {
+                        // Try to parse the ErrorResponseDTO from the backend
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMessage = errorJson.message;
                         }
-
-                        throw new Error(errorMessage);
+                    } catch (e) {
+                        // Fallback if the server didn't send JSON
+                        errorMessage = `Server responded with status ${response.status}`;
                     }
 
-                    // Show AI response if successful
-                    const botResponse = await response.text();
-                    addAskMeMessage(botResponse, "bot");
-
-                } catch (error) {
-                    console.error("Chat communication failure:", error);
-                    removeTypingIndicator(typingId);
-
-                    // 💡 Feed the dynamic error message directly into the modal
-                    if (typeof showErrorModal === "function") {
-                        showErrorModal(
-                            "Request Unsuccessful",
-                            error.message // This will now show the content filter warning!
-                        );
-                    } else {
-                        addAskMeMessage(error.message, "bot error");
-                    }
+                    throw new Error(errorMessage);
                 }
-    });
+
+                // Show AI response if successful
+                const botResponse = await response.text();
+                addAskMeMessage(botResponse, "bot");
+
+            } catch (error) {
+                console.error("Chat communication failure:", error);
+                removeTypingIndicator(typingId);
+
+                // Feed the dynamic error message directly into the modal
+                if (typeof showErrorModal === "function") {
+                    showErrorModal(
+                        "Request Unsuccessful",
+                        error.message // This will show the content filter warning!
+                    );
+                } else {
+                    addAskMeMessage(error.message, "bot error");
+                }
+            }
+        });
 
     // Helper: Add Message to UI
     function addAskMeMessage(text, senderClass) {
