@@ -204,6 +204,17 @@
     Ask Ivy
 </button>
 
+<div id="errorModalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+        <h3 class="modal-title" id="errorModalTitle">System Alert</h3>
+        <div class="modal-body" id="errorModalBody">
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="closeErrorModalBtn" class="btn btn-primary">Acknowledge</button>
+        </div>
+    </div>
+</div>
+
 
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/notifications.js}"></script>
