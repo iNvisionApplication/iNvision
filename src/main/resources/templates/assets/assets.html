@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <div class="asset-loan-layout">
+    <div class="asset-loan-layout" th:style="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'} ? 'grid-template-columns: 1fr;' : ''">
 
         <div>
             <div class="asset-toolbar">
@@ -67,7 +67,7 @@
             </div>
         </div>
 
-        <aside class="loan-request-panel" id="loanRequestPanel">
+        <aside class="loan-request-panel" id="loanRequestPanel" th:unless="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}">
 
             <h3>Loan Request</h3>
 
