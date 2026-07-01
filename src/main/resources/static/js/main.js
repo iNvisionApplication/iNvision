@@ -321,25 +321,30 @@ document.addEventListener("DOMContentLoaded", function () {
             submitBtn.innerHTML = "Processing...";
 
             fetch(`/api/loans/${loanId}/return-verification`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    [csrfHeader]: csrfToken
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(async response => {
-                if (!response.ok) throw new Error("Failed to verify return");
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                [csrfHeader]: csrfToken
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(async response => {
+                            if (!response.ok) {
+                                // Grab the exact error message from Spring Boot
+                                const errorText = await response.text();
+                                throw new Error(`Status ${response.status}: ${errorText}`);
+                            }
 
-                document.getElementById("returnVerificationModal").classList.add("hidden");
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error(error);
-                alert("An error occurred while verifying the return.");
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
+                            document.getElementById("returnVerificationModal").classList.remove("open");
+                            document.getElementById("returnVerificationModal").classList.add("hidden");
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            console.error("Backend Rejection:", error);
+                            alert(`Error communicating with server:\n\n${error.message}`);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        });
         });
     }
 });
@@ -1375,11 +1380,15 @@ function openReturnModal(loanId, assetTitle, borrowerName) {
     // 2. Clear out any old data from the last time the modal was opened
     document.getElementById("returnVerificationForm").reset();
 
-    // 3. Display the modal
-    document.getElementById("returnVerificationModal").classList.remove("hidden");
+    // 3. Display the modal (FIXED: Added the 'open' class)
+    const modal = document.getElementById("returnVerificationModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("open");
 }
 
 function closeReturnModal() {
-    // Hide the modal
-    document.getElementById("returnVerificationModal").classList.add("hidden");
+    // Hide the modal (FIXED: Removed the 'open' class)
+    const modal = document.getElementById("returnVerificationModal");
+    modal.classList.remove("open");
+    modal.classList.add("hidden");
 }

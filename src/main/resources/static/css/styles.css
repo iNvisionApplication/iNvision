@@ -1557,7 +1557,7 @@ tbody td.muted {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(13, 27, 62, 0.5);
+    background: White;
     z-index: 200;
     align-items: center;
     justify-content: center;

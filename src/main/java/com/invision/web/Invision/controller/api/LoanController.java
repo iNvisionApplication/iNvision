@@ -154,7 +154,7 @@ public class LoanController {
         return ResponseEntity.ok(loanService.confirmLoanReturn(loanId));
     }
 
-    @PutMapping("/api/loans/{loanId}/return-verification")
+    @PutMapping("/{loanId}/return-verification")
     public ResponseEntity<?> verifyAssetReturn(
             @PathVariable Long loanId,
             @RequestBody ReturnVerificationDTO verificationData) {
