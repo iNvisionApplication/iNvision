@@ -259,43 +259,39 @@ async function approveLoan(loanId) {
 }
 
 async function rejectLoan(loanId) {
+    const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+    const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
-    const token = document
-        .querySelector("meta[name='_csrf']")
-        .getAttribute("content");
-
-    const header = document
-        .querySelector("meta[name='_csrf_header']")
-        .getAttribute("content");
+    // 💡 ADD THIS: Lock button and show spinner
+    const rejectBtn = document.querySelector(`button[onclick="rejectLoan(${loanId})"]`);
+    let originalText = "Reject";
+    if (rejectBtn) {
+        originalText = rejectBtn.innerHTML;
+        rejectBtn.disabled = true;
+        rejectBtn.innerHTML = `<span class="btn-spinner"></span> Rejecting...`;
+    }
 
     try {
-
         const response = await fetch(`/api/loans/${loanId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
                 [header]: token
             },
-            body: JSON.stringify({
-                loanStatus: "REJECTED"
-            })
+            body: JSON.stringify({ loanStatus: "REJECTED" })
         });
 
-        if (!response.ok) {
-            throw new Error();
-        }
-
+        if (!response.ok) throw new Error();
         loadUserLoans(currentLoansPage);
-
     } catch (error) {
 
-        showErrorModal(
-            "Rejection Failed",
-            "Unable to reject this loan request."
-        );
+        if (rejectBtn) {
+            rejectBtn.disabled = false;
+            rejectBtn.innerHTML = originalText;
+        }
+        showErrorModal("Rejection Failed", "Unable to reject this loan request.");
     }
 }
-
 function submitLoanRequest(event) {
     event.preventDefault();
 
@@ -785,7 +781,7 @@ async function createAdminUser(event) {
         email: document.getElementById("adminEmail").value,
         department: document.getElementById("adminDepartment").value,
         password: document.getElementById("adminPassword").value,
-        role: "ADMIN"
+        role: "MANAGER"
     };
 
     try {
@@ -1090,6 +1086,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!toggleBtn || !closeBtn || !askMeForm || !askMeInput || !askMeMessages) return;
 
+    // Open/Close Panel
     toggleBtn.addEventListener("click", () => {
         document.body.classList.add("askme-open");
         askMeInput.focus();
@@ -1099,33 +1096,107 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.remove("askme-open");
     });
 
-    askMeForm.addEventListener("submit", (event) => {
-        event.preventDefault();
+    // Handle Form Submission
+        askMeForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-        const question = askMeInput.value.trim();
-        if (!question) return;
+            const question = askMeInput.value.trim();
+            if (!question) return;
 
-        addAskMeMessage(question, "user");
-        askMeInput.value = "";
+            // Instantly show user message
+            addAskMeMessage(question, "user");
+            askMeInput.value = "";
 
-        setTimeout(() => {
-            addAskMeMessage(
-                "This is the IVY iNVision assistant. Backend AI connection will be added next.",
-                "bot"
-            );
-        }, 400);
-    });
+            // Show a "Typing..." indicator
+            const typingId = "typing-" + Date.now();
+            addTypingIndicator(typingId);
 
-    function addAskMeMessage(text, sender) {
+            // Fetch CSRF Tokens
+            const tokenElement = document.querySelector("meta[name='_csrf']");
+            const headerElement = document.querySelector("meta[name='_csrf_header']");
+            const token = tokenElement ? tokenElement.getAttribute("content") : "";
+            const header = headerElement ? headerElement.getAttribute("content") : "";
+
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain", // Matches @RequestBody String
+                        [header]: token
+                    },
+                    body: question
+                });
+
+                removeTypingIndicator(typingId);
+
+                // Handle custom backend error messages dynamically
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = "An unexpected system error occurred.";
+
+                    try {
+                        // Try to parse the ErrorResponseDTO from the backend
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMessage = errorJson.message;
+                        }
+                    } catch (e) {
+                        // Fallback if the server didn't send JSON
+                        errorMessage = `Server responded with status ${response.status}`;
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                // Show AI response if successful
+                const botResponse = await response.text();
+                addAskMeMessage(botResponse, "bot");
+
+            } catch (error) {
+                console.error("Chat communication failure:", error);
+                removeTypingIndicator(typingId);
+
+                // Feed the dynamic error message directly into the modal
+                if (typeof showErrorModal === "function") {
+                    showErrorModal(
+                        "Request Unsuccessful",
+                        error.message // This will show the content filter warning!
+                    );
+                } else {
+                    addAskMeMessage(error.message, "bot error");
+                }
+            }
+        });
+
+    // Helper: Add Message to UI
+    function addAskMeMessage(text, senderClass) {
         const message = document.createElement("div");
-        message.className = `askme-message ${sender}`;
+        message.className = `askme-message ${senderClass}`;
         message.textContent = text;
-
         askMeMessages.appendChild(message);
         askMeMessages.scrollTop = askMeMessages.scrollHeight;
     }
-});
 
+    // Helper: Add Typing Dots
+    function addTypingIndicator(id) {
+        const indicator = document.createElement("div");
+        indicator.className = "askme-message bot typing-indicator";
+        indicator.id = id;
+        indicator.innerHTML = `
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+        `;
+        askMeMessages.appendChild(indicator);
+        askMeMessages.scrollTop = askMeMessages.scrollHeight;
+    }
+
+    // Helper: Remove Typing Dots
+    function removeTypingIndicator(id) {
+        const indicator = document.getElementById(id);
+        if (indicator) indicator.remove();
+    }
+});
 //FILTER: ASSETS BY CATEGORY
 function filterAssetsByCategory() {
     const category = document.getElementById("assetCategoryFilter").value;
@@ -1148,3 +1219,35 @@ function filterAssetsByCategory() {
             showErrorModal("Filter Failed", "Could not retrieve assets by category.");
         });
 }
+
+// ================= GLOBAL MODAL CONTROLLER =================
+
+function showErrorModal(title, message) {
+    const backdrop = document.getElementById("errorModalBackdrop");
+    const titleEl = document.getElementById("errorModalTitle");
+    const bodyEl = document.getElementById("errorModalBody");
+
+    if (backdrop && titleEl && bodyEl) {
+        titleEl.textContent = title;
+        bodyEl.innerHTML = `<p>${message}</p>`; // Using innerHTML in case you want to pass formatting
+
+        // Remove hidden and add open to trigger your CSS animations
+        backdrop.classList.remove("hidden");
+        backdrop.classList.add("open");
+    } else {
+        console.error("Modal elements not found on this page.");
+    }
+}
+
+// Global listener to close the modal
+document.addEventListener("DOMContentLoaded", () => {
+    const closeBtn = document.getElementById("closeErrorModalBtn");
+    const backdrop = document.getElementById("errorModalBackdrop");
+
+    if (closeBtn && backdrop) {
+        closeBtn.addEventListener("click", () => {
+            backdrop.classList.remove("open");
+            backdrop.classList.add("hidden");
+        });
+    }
+});

@@ -18,6 +18,7 @@ import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -123,7 +124,7 @@ public class LoanService {
 
     @PreAuthorize("hasAnyRole('ROLE_MANAGER')") //only Managers can update loanStatus
     @Transactional
-    public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO){
+    public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO) throws BadRequestException {
         User manager = getAuthenticatedUser();
         String managerEmail = manager.getEmail();
 
@@ -147,15 +148,20 @@ public class LoanService {
             throw new InvalidLoanStatusChangeException("Cannot change status of closed loan");
         }
 
-        loan.setStatus(newStatus);
         Asset asset = loan.getAsset();
         String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
 
         // FIX 2: Consolidated logic path updates to remove duplicate code blocks fighting each other
         // fix 3: Fixing the due date reflection from back to front
         if (newStatus == LoanStatus.APPROVED) {
+
+            assert asset != null;
+            if(asset.getStatus() == AssetStatus.LOANED)
+                throw new BadRequestException("This asset is already been loaned out.");
+
             LocalDateTime approvalDate = LocalDateTime.now();
 
+            loan.setStatus(newStatus);
             int days = loan.getLoanPeriod() != null
                     ? loan.getLoanPeriod().getDays()
                     : 14;
@@ -179,6 +185,7 @@ public class LoanService {
         } else if (newStatus == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
             loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
+            loan.setStatus(newStatus);
 
             if (asset != null) {
                 asset.setStatus(AssetStatus.AVAILABLE);
@@ -189,7 +196,7 @@ public class LoanService {
 
         } else if (newStatus == LoanStatus.REJECTED) {
             loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED);
-
+            loan.setStatus(newStatus);
             User user = loan.getUser();
             notificationService.sendAll(user.getUserId(), user.getEmail(),
                     NotificationReason.LOAN_STATUS_UPDATED,
@@ -202,6 +209,12 @@ public class LoanService {
 
         Loan saved = loanRepository.saveAndFlush(loan);
         return loanMapper.loanToLoanResponseDTO(saved);
+    }
+
+    @PreAuthorize("hasRole ('ROLE_MANAGER')")
+    public List<LoanResponseDTO> getDepartmentLoansByStatus(LoanStatus status){
+        User manager = getAuthenticatedUser();
+        return loanRepository.findByUserDepartmentAndStatus(manager.getDepartment(),status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
     @PreAuthorize("hasRole('ROLE_BORROWER')")

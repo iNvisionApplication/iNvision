@@ -46,7 +46,7 @@ public class UserService {
     }
 
     @Transactional
-    public String registerUser(UserRegistrationDTO request){
+    public void registerUser(UserRegistrationDTO request){
 
         User user = new User();
 
@@ -57,7 +57,6 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.BORROWER);
         userRepository.save(user);
-        return "User " + user.getEmail() + " registered successfully as " + user.getRole();
     }
 
     @Transactional
