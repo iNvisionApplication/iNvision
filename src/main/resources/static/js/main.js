@@ -372,20 +372,20 @@ function submitLoanRequest(event) {
         return;
     }
 
-    // Convert HTML5 Date (YYYY-MM-DD) to Java LocalDateTime (YYYY-MM-DDTHH:mm:ss)
-    const formattedCollectionDate = `${collectionDate}T08:00:00`;
-    const formattedReturnDate = `${returnDate}T17:00:00`;
 
-    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
-    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+            const formattedCollectionDate = `${collectionDate}T08:00:00`;
+            const formattedReturnDate = `${returnDate}T17:00:00`;
 
-    const loanRequest = {
-        assetId: Number(assetId),
-        userId: Number(userId),
-        description: description,
-        collectionDate: formattedCollectionDate,
-        returnDate: formattedReturnDate
-    };
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+
+            const loanRequest = {
+                assetId: Number(assetId),
+                description: description,
+                checkoutDate: formattedCollectionDate,
+                dueDate: formattedReturnDate
+            };
 
     // Lock button and show spinner
     let originalText = "Submit Request";
