@@ -472,6 +472,25 @@ ul {
 }
 
 /* =============================================
+   Asset Add
+   ============================================= */
+
+/* Adds a red asterisk automatically to any label with the 'required-label' class */
+.form-label.required-label::after {
+    content: " *";
+    color: #ef4444; /* A standard alert red */
+    font-weight: bold;
+}
+
+/* A soft style for the optional tag */
+.label-optional {
+    color: var(--text-muted, #888);
+    font-size: 0.85em;
+    font-weight: normal;
+    margin-left: 4px;
+}
+
+/* =============================================
    MAIN CONTENT
    ============================================= */
 .main-content {
@@ -1848,6 +1867,38 @@ tbody td.muted {
     font-size: 24px;
     color: var(--navy);
     margin-bottom: 16px;
+}
+/* Add this to your main stylesheet (e.g., styles.css or main.css) where your other .loan-request-panel styles are located */
+
+#loanRequestForm input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 6px;
+    background-color: var(--input-bg, #fff);
+    color: var(--text-color, #333);
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#loanRequestForm input[type="date"]:focus {
+    outline: none;
+    border-color: #cfa95b; /* Matches your gold theme */
+    box-shadow: 0 0 0 3px rgba(207, 169, 91, 0.2);
+}
+
+/* Optional: Customizing the calendar picker icon across different browsers */
+#loanRequestForm input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+#loanRequestForm input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }
 
 .selected-asset-box {

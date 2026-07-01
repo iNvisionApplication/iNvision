@@ -1,13 +1,16 @@
 package com.invision.web.Invision.controller.api;
 
-import com.invision.web.Invision.dto.LoanActionDTO;
-import com.invision.web.Invision.dto.LoanRequestDTO;
-import com.invision.web.Invision.dto.LoanResponseDTO;
-import com.invision.web.Invision.dto.LoanStatusDTO;
+import com.invision.web.Invision.dto.*;
 import com.invision.web.Invision.enums.AssetLoanStatus;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
+import com.invision.web.Invision.enums.Location;
+import com.invision.web.Invision.model.Asset;
+import com.invision.web.Invision.model.Loan;
+import com.invision.web.Invision.repository.AssetRepository;
+import com.invision.web.Invision.repository.LoanRepository;
 import com.invision.web.Invision.service.LoanService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,8 @@ import java.util.List;
 public class LoanController {
 
     private final LoanService loanService;
+    private final LoanRepository loanRepository;
+    private final AssetRepository assetRepository;
 
     @PostMapping
     public ResponseEntity<LoanResponseDTO> requestLoan(
@@ -149,4 +154,30 @@ public class LoanController {
         return ResponseEntity.ok(loanService.confirmLoanReturn(loanId));
     }
 
+    @PutMapping("/api/loans/{loanId}/return-verification")
+    public ResponseEntity<?> verifyAssetReturn(
+            @PathVariable Long loanId,
+            @RequestBody ReturnVerificationDTO verificationData) {
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found with ID: " + loanId));
+
+        // Update the Asset's condition and location based on verificationData
+        Asset asset = loan.getAsset();
+        asset.setCondition(verificationData.condition());
+        asset.setLocation(verificationData.location());
+
+        // Mark the Loan status as Returned
+        loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
+        loan.setStatus(LoanStatus.RETURNED);
+
+        // Desc for the condition by the manager
+        asset.setDescription(verificationData.managerNotes());
+
+        // Save changes
+        assetRepository.save(asset);
+        loanRepository.save(loan);
+
+        return ResponseEntity.ok().build();
+    }
 }
