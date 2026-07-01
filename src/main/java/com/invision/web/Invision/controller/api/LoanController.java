@@ -33,7 +33,7 @@ public class LoanController {
     @PostMapping
     public ResponseEntity<LoanResponseDTO> requestLoan(
             @RequestBody LoanRequestDTO loanRequestDTO) {
-
+        System.out.println("dates from front end:"+ loanRequestDTO.dueDate()+",,, "+loanRequestDTO.checkoutDate());
         return ResponseEntity.status(HttpStatus.CREATED).body(loanService.requestLoan(loanRequestDTO));
     }
 

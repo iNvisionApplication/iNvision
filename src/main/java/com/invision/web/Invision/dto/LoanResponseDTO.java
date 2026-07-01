@@ -12,11 +12,12 @@ import java.time.LocalDateTime;
 public record LoanResponseDTO(
         String loanId,
         String assetTitle,
-        String borrowerName,    // 💡 Changed from description to catch the user's name
-        String description,     // 💡 This matches loan.getDescription()
+        String borrowerName,
+        String description,
         LocalDateTime requestDate,
         LoanStatus status,
         LocalDateTime dueDate,
+        LocalDateTime checkoutDate,
         AssetLoanStatus assetLoanStatus
 ) {
 }
