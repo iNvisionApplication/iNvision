@@ -50,6 +50,7 @@ public class LoanService {
     private final ApplicationEventPublisher eventPublisher;
 
 
+    //retrieve all loans in system
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getAllOverdueLoans(){
         return loanRepository.findByDueDateBeforeAndStatus(LocalDateTime.now(), LoanStatus.APPROVED)
@@ -58,6 +59,7 @@ public class LoanService {
                 .toList();
     }
 
+    //retrieve all loans from department
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getOverdueLoansByDepartment(Department department) {
         List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusAndUserDepartment(
@@ -72,6 +74,7 @@ public class LoanService {
                 .toList();
     }
 
+    //retrieve user overdue loans
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getUserOverdueLoans(Long userId){
         // FIX 1: Added negation operator so it doesn't reject valid profiles
@@ -87,6 +90,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //retrieve signed in overdue loans
     @PreAuthorize("hasRole('ROLE_BORROWER')")
     public List<LoanResponseDTO> getCurrentUserOverdueLoans(){
         User user = getAuthenticatedUser();
@@ -99,6 +103,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //retrieve loans made for a specific asset
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getLoansByAsset(Long assetId){
         List<Loan> loans = loanRepository.findByAssetAssetId(assetId);
@@ -110,6 +115,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //retrieve borrower loan history
     public List<LoanResponseDTO> getUserLoans(){
         User user = getAuthenticatedUser();
         List<Loan> loans = loanRepository.findByUserUserId(user.getUserId());
@@ -121,6 +127,7 @@ public class LoanService {
         return loans.stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //Update loan Status
     @PreAuthorize("hasAnyRole('ROLE_MANAGER')") //only Managers can update loanStatus
     @Transactional
     public LoanResponseDTO updateLoanStatus(Long loanId, LoanStatusDTO actionDTO) throws BadRequestException {
@@ -150,8 +157,7 @@ public class LoanService {
         Asset asset = loan.getAsset();
         String assetInfo = "Asset ID: " + (asset != null ? asset.getAssetId() : "N/A");
 
-        // FIX 2: Consolidated logic path updates to remove duplicate code blocks fighting each other
-        // fix 3: Fixing the due date reflection from back to front
+        //Approving loan
         if (newStatus == LoanStatus.APPROVED) {
 
             assert asset != null;
@@ -173,7 +179,9 @@ public class LoanService {
 
             auditLogService.logCheckOut(manager.getUserId(), loanId, assetInfo);
 
-        } else if (newStatus == LoanStatus.RETURNED) {
+        } else
+            //Accept asset back after being loaned
+            if (newStatus == LoanStatus.RETURNED) {
             loan.setReturnDate(LocalDateTime.now());
             loan.setAssetLoanStatus(AssetLoanStatus.RETURN_CONFIRMED);
             loan.setStatus(newStatus);
@@ -185,7 +193,9 @@ public class LoanService {
 
             auditLogService.logCheckIn(manager.getUserId(), loanId, assetInfo);
 
-        } else if (newStatus == LoanStatus.REJECTED) {
+        } else
+            //Reject loan request
+            if (newStatus == LoanStatus.REJECTED) {
             loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED);
             loan.setStatus(newStatus);
             User user = loan.getUser();
@@ -202,12 +212,14 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(saved);
     }
 
+    //retrieve department loan of a specific status
     @PreAuthorize("hasRole ('ROLE_MANAGER')")
     public List<LoanResponseDTO> getDepartmentLoansByStatus(LoanStatus status){
         User manager = getAuthenticatedUser();
         return loanRepository.findByUserDepartmentAndStatus(manager.getDepartment(),status).stream().map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //borrower request a loan
     @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO requestLoan(LoanRequestDTO requestDTO){
@@ -215,19 +227,22 @@ public class LoanService {
         Asset asset = assetRepository.findById(requestDTO.assetId()).orElseThrow(
                 () -> new AssetNotFoundException("This asset does not exist")
         );
-
+        //check if user has less than max amount of active loans
         if(loanRepository.countByUserUserIdAndStatus(requester.getUserId(), LoanStatus.APPROVED) > 5){
             throw new ExceededLoanRequestException("User had too many active loans");
         }
 
+        //check if user has already requested a loan for the asset
         if (loanRepository.existsByUserUserIdAndAssetAssetIdAndStatusIn(requester.getUserId(), requestDTO.assetId(), List.of(LoanStatus.APPROVED, LoanStatus.PENDING))) {
             throw new BadLoanRequest("User has already has an active loan for this asset");
         }
 
+        //making sure user isn't trying to loan an asset that's retired
         if(asset.getStatus() == AssetStatus.RETIRED){
             throw new BadLoanRequest("This asset is retired and cannot be loaned");
         }
 
+        //check id department has active managers to approve loan
         List<User> managers = userRepository.findByDepartmentAndRole(requester.getDepartment(), Role.MANAGER);
         if (managers.isEmpty()) {
             throw new BadLoanRequest("No managers found for department: " + requester.getDepartment());
@@ -236,16 +251,8 @@ public class LoanService {
         List<User> copyOfManagers = new ArrayList<>(managers);
         Collections.shuffle(copyOfManagers);
 
-        // FIX 3: Safe execution limits prevent IndexOutOfBoundsException if department only holds 1 manager
-        notificationService.sendAll(copyOfManagers.get(0).getUserId(), copyOfManagers.get(0).getEmail(),
-                NotificationReason.LOAN_REQUEST,
-                "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-
-        if (copyOfManagers.size() > 1) {
-            notificationService.sendAll(copyOfManagers.get(1).getUserId(), copyOfManagers.get(1).getEmail(),
-                    NotificationReason.LOAN_REQUEST,
-                    "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
-        }
+        //set the loan period to system standard, also check if requested loan period
+        // isn't longer than max allowed
         LoanPeriod period;
         long daysBetween = ChronoUnit.DAYS.between(requestDTO.checkoutDate(),requestDTO.dueDate());
         int weeks = (int) Math.ceil( ((double) daysBetween/7));
@@ -263,6 +270,7 @@ public class LoanService {
 
         }
 
+        //map request to loan
         Loan loan = Loan.builder()
                 .asset(asset)
                 .user(requester)
@@ -276,6 +284,7 @@ public class LoanService {
                 .loanPeriod(period)
                 .build();
 
+        //send notifications only on successful request
         eventPublisher.publishEvent(new LoanRequestEvent(
                 requester.getUserId(),copyOfManagers.get(0).getEmail(), copyOfManagers.size() > 1 ? copyOfManagers.get(1).getEmail():null,asset.getTitle(),requester.getEmail()
         ));
@@ -288,6 +297,7 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(savedLoan);
     }
 
+    //borrower cancel loan
     @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO rejectLoan(LoanRejectionDTO rejectionDTO){
@@ -299,7 +309,7 @@ public class LoanService {
         loan.setStatus(LoanStatus.REJECTED);
         loan.getAsset().setStatus(AssetStatus.AVAILABLE);
 
-      if(rejectionDTO.reason().isEmpty()){
+      if(rejectionDTO.reason() == null || rejectionDTO.reason().isBlank()){
           loan.setRejectionReason("Did not not asset anymore");
       }else{
           loan.setRejectionReason(rejectionDTO.reason());
@@ -333,6 +343,7 @@ public class LoanService {
                 .map(loanMapper::loanToLoanResponseDTO).toList();
     }
 
+    //retrieve signed in borrower loans by status
     @Transactional
     public List<LoanResponseDTO> getUserLoansByStatus( LoanStatus status){
         User user = getAuthenticatedUser();
@@ -346,6 +357,7 @@ public class LoanService {
         return loans;
     }
 
+    //borrower returns asset
     @PreAuthorize("hasRole('ROLE_BORROWER')")
     @Transactional
     public LoanResponseDTO loanActionReturn(Long loanId){
@@ -368,21 +380,13 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
-    public Long getCurrentUserId() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getId();
-        }
-        return null;
-    }
-
+    //get signed-in user
     private User getAuthenticatedUser() {
         CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder
                 .getContext().getAuthentication().getPrincipal();
         return userDetails.getUser();
     }
 
-    // Inside LoanService.java
 
     public Page<LoanResponseDTO> getAllLoans(int page, int size) {
         User currentUser = getAuthenticatedUser();
@@ -415,6 +419,8 @@ public class LoanService {
 
         return loans.map(loanMapper::loanToLoanResponseDTO);
     }
+
+
     @PreAuthorize("hasRole('ROLE_MANAGER')")
     public org.springframework.data.domain.Page<LoanResponseDTO> getDepartmentLoans(int page, int size) {
         User manager = getAuthenticatedUser();
@@ -426,7 +432,7 @@ public class LoanService {
                 .map(loanMapper::loanToLoanResponseDTO);
     }
 
-    // Add this endpoint method inside LoanService.java
+    //manager confirms the return of the asset
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     @Transactional
     public LoanResponseDTO confirmLoanReturn(Long loanId) {
@@ -450,8 +456,9 @@ public class LoanService {
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
+    //auto cancel loans if they aren't collected by the collection date
+    //triggered at login
     public void checkAssetCollected(User user) {
-        System.out.println(user.getName());
         if (user.getRole() == Role.BORROWER) {
             List<Loan> loans = loanRepository.findByUserUserIdAndAssetLoanStatusInAndCheckoutDateBefore(
                     user.getUserId(),

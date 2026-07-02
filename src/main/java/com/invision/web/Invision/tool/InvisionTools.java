@@ -1,9 +1,6 @@
 package com.invision.web.Invision.tool;
 
-import com.invision.web.Invision.dto.AssetResponseDTO;
-import com.invision.web.Invision.dto.AssetSearchRequest;
-import com.invision.web.Invision.dto.LoanRequestDTO;
-import com.invision.web.Invision.dto.LoanResponseDTO;
+import com.invision.web.Invision.dto.*;
 import com.invision.web.Invision.enums.*;
 import com.invision.web.Invision.service.AssetService;
 import com.invision.web.Invision.service.LoanService;
@@ -21,6 +18,8 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class InvisionTools {
+
+    //tools agent calls after prompt
 
     private final AssetService assetService;
     private final LoanService loanService;
@@ -122,6 +121,38 @@ public class InvisionTools {
     public List<LoanResponseDTO> getDepartmentPendingApprovals(){
 
         return loanService.getDepartmentLoansByStatus(LoanStatus.PENDING);
+    }
+
+    @Tool(description = """
+        Cancels an existing asset loan request.
+
+        Never use a loan ID remembered from a previous conversation turn.
+        Never guess a loan ID.
+        If multiple pending loans match the user's request, ask the user to clarify.
+        Use this tool when the borrower wants to:
+            - cancel a loan request
+            - withdraw a loan application
+            - no longer borrow an asset
+            - cancel a pending loan
+            - cancel a loan that is awaiting approval
+            - cancel a loan that is awaiting collection
+
+        Required:
+            - loanId
+
+        Optional:
+            - reason (if the user gives one)
+
+        If the user does not provide a reason, leave it empty and a default cancellation reason will be used.
+
+        Only use this tool for cancelling the user's own loan request. Do not use it for approving, rejecting on behalf of staff, returning assets, or deleting loans.
+        """)
+    public LoanResponseDTO cancelLoan(
+            @ToolParam(description = "The ID of the loan to cancel.") Long loanId,
+            @ToolParam(description = "Optional reason for cancelling the loan request.") String reason
+    ) {
+        LoanRejectionDTO rejectionDTO = new LoanRejectionDTO(loanId, reason);
+        return loanService.rejectLoan(rejectionDTO);
     }
 
 
