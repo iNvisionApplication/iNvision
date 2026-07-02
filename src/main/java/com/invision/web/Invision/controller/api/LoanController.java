@@ -55,7 +55,7 @@ public class LoanController {
         return ResponseEntity.ok(loanService.loanActionCollect(loanId));
     }
 
-    @PatchMapping("/reject")
+    @PatchMapping("/cancel")
     public ResponseEntity<LoanResponseDTO> rejectLoan(
             @RequestBody LoanRejectionDTO rejectionDTO) throws BadRequestException {
 
