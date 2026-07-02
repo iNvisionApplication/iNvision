@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
@@ -29,25 +30,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
-                                "/api/assets/**",
-                                "/api/loans/**",
-                                "/api/users/**",
-                                "/api/chat/**",
-                                "/users/**",
-                                "/api/notification/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/forgot-password/**"
-                        )
-                )
+                .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        // Public Assets & Non-authenticated view layers
-
                                 // Public Assets & Non-authenticated view layers
                                 .requestMatchers(
-                                        "/", // 💡 ADD THIS LINE: Explicitly opens access to your root index landing page view
+                                        "/",
                                         "/css/**", "/js/**", "/images/**", "/uploads/**", "/favicon.ico",
                                         "/error", "/error/**",
                                         "/api/chat/**",

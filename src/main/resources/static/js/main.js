@@ -461,7 +461,9 @@ function executeLoanAction(loanId, actionEndpoint) {
     });
 }
 
-// ================= ASSETS =================
+// =============================================
+// ASSET MANAGEMENT
+// =============================================
 
 function searchAllAssets() {
     const input = document.getElementById("assetSearchInput");
@@ -746,7 +748,9 @@ function openLoanPanel(assetId, assetTitle) {
     }
 }
 
-// ================= USERS =================
+// =============================================
+// USER MANAGEMENT
+// =============================================
 
 function closeLoanPanel() {
     const panel = document.getElementById("loanRequestPanel");
@@ -902,7 +906,9 @@ async function saveUserChanges(event) {
     }
 }
 
-// ================= HELPERS =================
+// =============================================
+// MODAL & UTILITY HELPERS
+// =============================================
 
 function getAssetImagePath(path) {
     if (!path || path === "string" || path === "url_photo") return "/images/no-image.png";
@@ -1143,7 +1149,9 @@ function showToast(message) {
     }, 4000);
 }
 
-// ================= ASK ME CHATBOT =================
+// =============================================
+// IVY THE CHATBOT
+// =============================================
 
 document.addEventListener("DOMContentLoaded", () => {
     const toggleBtn = document.getElementById("askMeToggle");

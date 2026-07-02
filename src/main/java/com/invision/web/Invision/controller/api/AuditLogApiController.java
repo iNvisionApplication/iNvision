@@ -30,8 +30,6 @@ public class AuditLogApiController {
 
         List<AuditLog> rawLogs = auditLogRepository.findAll();
 
-        // ✅ FIXED: Removed 'th -> false' filter so lookups register correctly
-        // ─── UPDATE THIS SPECIFIC PIECE INSIDE YOUR CONTROLLER ───
         Map<Long, String> userEmailMap = userRepository.findAll().stream()
                 .filter(u -> u.getEmail() != null)
                 .collect(Collectors.toMap(
@@ -54,7 +52,7 @@ public class AuditLogApiController {
                         (l.getAction() != null && l.getAction().name().equalsIgnoreCase(action.trim())))
 
                 .map(l -> {
-                    // ✅ FIXED: Added map verification step to resolve real user emails
+                    // Added map verification step to resolve real user emails
                     String email = "SYSTEM / AUTOMATION";
                     if (l.getUserId() != null && userEmailMap.containsKey(l.getUserId())) {
                         email = userEmailMap.get(l.getUserId());
