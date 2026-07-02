@@ -25,8 +25,10 @@ public class ChatService {
     public String chat(String userMessage){
         Long userId = getCurrentUserId();
 
+        //get conversation from memory or create new conversation if one does not exist
         Conversation conversation = memoryService.getConversation(userId);
 
+        //add new user message to conversation memory
         conversation.addChatMessage(
                 new ConversationMessage(
                         ConversationMessage.ChatRole.USER,
@@ -34,13 +36,15 @@ public class ChatService {
                         Instant.now()
                 ));
 
-
+        //convert conversation to list of spring ai messages
         Prompt prompt = new Prompt(buildMessages(conversation));
 
+        //get ai response
         var chatResponse = chatClient.prompt(prompt)
                 .call()
                 .chatResponse();
 
+        //add assistant response to the conversation
         String response = chatResponse.getResult().getOutput().getText();
                   conversation.addChatMessage(
                 new ConversationMessage(
@@ -63,10 +67,12 @@ public class ChatService {
 
     }
 
+    //convert conversation to list of spring ai messages
     private List<Message> buildMessages(Conversation conversation) {
 
         List<Message> messages = new ArrayList<>();
 
+        //add messages from conversation to list of spring ai messages with roles
         for (ConversationMessage message : conversation.getMessages()) {
 
             switch (message.chatRole()) {
