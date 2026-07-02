@@ -5,6 +5,7 @@ import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
 import com.invision.web.Invision.enums.AssetLoanStatus;
 import com.invision.web.Invision.enums.Department;
+import com.invision.web.Invision.enums.LoanPeriod;
 import com.invision.web.Invision.model.Asset;
 import com.invision.web.Invision.model.Loan;
 import com.invision.web.Invision.enums.LoanStatus;
@@ -36,30 +37,21 @@ public class LoanMapper {
             return null;
         }
 
-        // ✅ FIXED: Added borrower name extraction right before the description parameter
+
         return new LoanResponseDTO(
                 String.valueOf(loan.getLoanId()),
                 loan.getAsset() != null ? loan.getAsset().getTitle() : "N/A",
-                loan.getUser() != null ? loan.getUser().getName() : "SYSTEM", // 💡 Ties to borrowerName
+                loan.getUser() != null ? loan.getUser().getName() : "SYSTEM", // Ties to borrowerName
                 loan.getDescription(),
                 loan.getRequestDate(),
                 loan.getStatus(),
                 loan.getDueDate(),
+                loan.getCheckoutDate(),
                 loan.getAssetLoanStatus()
         );
     }
 
-    public Loan loanRequestDTOToLoan(LoanRequestDTO requestDTO, Department department, Long loanId){
-        Asset asset = assetRepository.findById(requestDTO.assetId())
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found: " + requestDTO.assetId()));
 
-
-        return Loan.builder().asset(asset).requestDate(LocalDateTime.now()).
-                status(LoanStatus.PENDING).description(requestDTO.description()).
-                loanPeriod(requestDTO.loanPeriod()).userDepartment(department).loanId(loanId).
-                assetLoanStatus(AssetLoanStatus.PENDING_APPROVAL)
-                .build();
-    }
 
 //    public Loan LoanActionDTOToLoan(Long loanId, LoanActionDTO actionDTO){
 //        Loan loan = loanRepository.findById(loanId)
