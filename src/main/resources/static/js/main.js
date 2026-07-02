@@ -182,9 +182,10 @@ function loadUserLoans(pageNumber) {
                         actionsHtml = `<button id="approve-btn-${loan.loanId}" class="btn btn-sm btn-success" onclick="approveLoan(${loan.loanId})">Approve</button>
                                         <button class="btn btn-sm btn-danger" onclick="rejectLoan(${loan.loanId})">Reject</button>`;
                     }
+                    // REPLACE WITH THIS:
                     else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
-                          actionsHtml = `<button class="btn btn-sm btn-primary" onclick="executeLoanAction(${loan.loanId}, 'confirm-return')">Confirm Return</button>`;
-                      } else {
+                        actionsHtml = `<button class="btn btn-sm btn-primary" onclick="openReturnModal(${loan.loanId}, '${escapeText(loan.assetTitle)}', '${escapeText(loan.borrowerName)}')">Confirm Return</button>`;
+                    } else {
                         actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
                     }
                 } else {
@@ -292,12 +293,69 @@ async function rejectLoan(loanId) {
         showErrorModal("Rejection Failed", "Unable to reject this loan request.");
     }
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    const returnVerificationForm = document.getElementById("returnVerificationForm");
+
+    if (returnVerificationForm) {
+        returnVerificationForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const loanId = document.getElementById("returnLoanId").value;
+            const condition = document.getElementById("returnCondition").value;
+            const location = document.getElementById("returnLocation").value;
+            const notes = document.getElementById("returnNotes").value;
+            const submitBtn = event.target.querySelector("button[type='submit']");
+
+            const payload = {
+                condition: condition,
+                location: location,
+                managerNotes: notes
+            };
+
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = "Processing...";
+
+            fetch(`/api/loans/${loanId}/return-verification`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                [csrfHeader]: csrfToken
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(async response => {
+                            if (!response.ok) {
+                                // Grab the exact error message from Spring Boot
+                                const errorText = await response.text();
+                                throw new Error(`Status ${response.status}: ${errorText}`);
+                            }
+
+                            document.getElementById("returnVerificationModal").classList.remove("open");
+                            document.getElementById("returnVerificationModal").classList.add("hidden");
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            console.error("Backend Rejection:", error);
+                            alert(`Error communicating with server:\n\n${error.message}`);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        });
+        });
+    }
+});
+
 function submitLoanRequest(event) {
     event.preventDefault();
 
     const userId = getCurrentUserId();
     const assetId = document.getElementById("selectedAssetId")?.value;
-    const loanPeriod = document.getElementById("loanPeriod")?.value;
+    const collectionDate = document.getElementById("collectionDate")?.value;
+    const returnDate = document.getElementById("returnDate")?.value;
     const description = document.getElementById("description")?.value;
     const submitBtn = document.getElementById("submitLoanBtn");
 
@@ -309,20 +367,25 @@ function submitLoanRequest(event) {
         showErrorModal("Identity Error", "User contextual assignment metadata missing.");
         return;
     }
-    if (!loanPeriod) {
-        showErrorModal("Timeline Required", "Please specify a clear operational loan duration period.");
+    if (!collectionDate || !returnDate) {
+        showErrorModal("Timeline Required", "Please specify both the collection and return dates.");
         return;
     }
 
-    const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
-    const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
-    const loanRequest = {
-        assetId: Number(assetId),
-        userId: Number(userId),
-        description: description,
-        loanPeriod: loanPeriod
-    };
+            const formattedCollectionDate = `${collectionDate}T08:00:00`;
+            const formattedReturnDate = `${returnDate}T17:00:00`;
+
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+
+            const loanRequest = {
+                assetId: Number(assetId),
+                description: description,
+                checkoutDate: formattedCollectionDate,
+                dueDate: formattedReturnDate
+            };
 
     // Lock button and show spinner
     let originalText = "Submit Request";
@@ -1251,3 +1314,81 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const collectionInput = document.getElementById("collectionDate");
+    const returnInput = document.getElementById("returnDate");
+
+    if (!collectionInput || !returnInput) return;
+
+    function getMinimumAllowedDate() {
+        let date = new Date();
+        date.setDate(date.getDate() + 2);
+
+        if (date.getDay() === 6) {
+            date.setDate(date.getDate() + 2);
+        } else if (date.getDay() === 0) {
+            date.setDate(date.getDate() + 1);
+        }
+
+        return date.toISOString().split('T')[0];
+    }
+
+    const minDate = getMinimumAllowedDate();
+    collectionInput.setAttribute("min", minDate);
+    returnInput.setAttribute("min", minDate);
+
+    function preventWeekends(event) {
+        const value = event.target.value;
+        if (!value) return;
+
+        const selectedDate = new Date(value);
+        const day = selectedDate.getUTCDay();
+
+        if (day === 0 || day === 6) {
+            if (typeof showErrorModal === "function") {
+                showErrorModal("Invalid Date", "Weekends are not permitted for collection or return.");
+            } else {
+                alert("Weekends are not permitted. Please select a weekday.");
+            }
+            event.target.value = "";
+        }
+    }
+
+    function syncReturnDateLimits() {
+        if (collectionInput.value) {
+            returnInput.setAttribute("min", collectionInput.value);
+            if (returnInput.value && returnInput.value < collectionInput.value) {
+                returnInput.value = collectionInput.value;
+            }
+        }
+    }
+
+    collectionInput.addEventListener("input", preventWeekends);
+    collectionInput.addEventListener("change", syncReturnDateLimits);
+    returnInput.addEventListener("input", preventWeekends);
+});
+
+// ================= RETURN VERIFICATION MODAL =================
+
+function openReturnModal(loanId, assetTitle, borrowerName) {
+    // 1. Inject the data into the modal
+    document.getElementById("returnLoanId").value = loanId;
+    document.getElementById("returnAssetTitle").innerText = assetTitle || "Unknown Asset";
+    document.getElementById("returnBorrowerName").innerText = borrowerName || "Unknown Borrower";
+
+    // 2. Clear out any old data from the last time the modal was opened
+    document.getElementById("returnVerificationForm").reset();
+
+    // 3. Display the modal (FIXED: Added the 'open' class)
+    const modal = document.getElementById("returnVerificationModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("open");
+}
+
+function closeReturnModal() {
+    // Hide the modal (FIXED: Removed the 'open' class)
+    const modal = document.getElementById("returnVerificationModal");
+    modal.classList.remove("open");
+    modal.classList.add("hidden");
+}

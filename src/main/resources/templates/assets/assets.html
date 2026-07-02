@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <div class="asset-loan-layout">
+    <div class="asset-loan-layout" th:style="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'} ? 'grid-template-columns: 1fr;' : ''">
 
         <div>
             <div class="asset-toolbar">
@@ -67,7 +67,7 @@
             </div>
         </div>
 
-        <aside class="loan-request-panel" id="loanRequestPanel">
+        <aside class="loan-request-panel" id="loanRequestPanel" th:unless="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}">
 
             <h3>Loan Request</h3>
 
@@ -80,14 +80,11 @@
 
                 <input type="hidden" id="selectedAssetId"/>
 
-                <label for="loanPeriod">Loan Period</label>
-                <select id="loanPeriod" required>
-                    <option value="">Select loan period</option>
-                    <option value="ONE_WEEK">One Week</option>
-                    <option value="TWO_WEEKS">Two Weeks</option>
-                    <option value="THREE_WEEKS">Three Weeks</option>
-                    <option value="FOUR_WEEKS">Four Weeks</option>
-                </select>
+                <label for="collectionDate">Collection Date</label>
+                <input type="date" id="collectionDate" required>
+
+                <label for="returnDate">Return Date</label>
+                <input type="date" id="returnDate" required>
 
                 <label for="description">Purpose :</label>
                 <textarea id="description"

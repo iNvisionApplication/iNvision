@@ -7,6 +7,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDateTime;
+
 public record LoanRequestDTO(
         @NotNull(message = "Asset ID is required")
         @Positive(message = "Asset ID must be valid")
@@ -18,6 +20,9 @@ public record LoanRequestDTO(
         @Size(max = 20, message = "Description must be under 255 characters")
         String description,
 
-        @NotNull(message = "Loan period is required")
-        LoanPeriod loanPeriod
+        @NotNull
+        LocalDateTime checkoutDate,
+
+        @NotNull
+        LocalDateTime dueDate
 ) {}

@@ -53,6 +53,8 @@ public class Asset {
     @Column(name = "condition")
     private Condition condition;
 
+    private String description;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

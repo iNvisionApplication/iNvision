@@ -33,7 +33,9 @@ import jakarta.transaction.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -159,15 +161,7 @@ public class LoanService {
             if(asset.getStatus() == AssetStatus.LOANED)
                 throw new BadRequestException("This asset is already been loaned out.");
 
-            LocalDateTime approvalDate = LocalDateTime.now();
-
             loan.setStatus(newStatus);
-            int days = loan.getLoanPeriod() != null
-                    ? loan.getLoanPeriod().getDays()
-                    : 14;
-
-            loan.setCheckoutDate(approvalDate);
-            loan.setDueDate(approvalDate.plusDays(days));
             loan.setAssetLoanStatus(AssetLoanStatus.PENDING_COLLECTION);
 
             if (asset != null) {
@@ -255,16 +249,34 @@ public class LoanService {
                     NotificationReason.LOAN_REQUEST,
                     "Loan for " + asset.getTitle() + " was requested by " + requester.getEmail() + ".");
         }
+        LoanPeriod period;
+        long daysBetween = ChronoUnit.DAYS.between(requestDTO.checkoutDate(),requestDTO.dueDate());
+        int weeks = (int) Math.ceil( ((double) daysBetween/7));
+        switch (weeks){
+            case 1:period = LoanPeriod.ONE_WEEK;
+            break;
+            case 2:period = LoanPeriod.TWO_WEEKS;
+            break;
+            case 3:period = LoanPeriod.THREE_WEEKS;
+            break;
+            case 4:period = LoanPeriod.FOUR_WEEKS;
+            break;
+            default:
+                throw new BadLoanRequest("Loan period can not excide four weeks");
+
+        }
 
         Loan loan = Loan.builder()
                 .asset(asset)
                 .user(requester)
                 .requestDate(LocalDateTime.now())
+                .checkoutDate(requestDTO.checkoutDate())
+                .dueDate(requestDTO.checkoutDate().plusDays(period.getDays()))
                 .status(LoanStatus.PENDING)
                 .assetLoanStatus(AssetLoanStatus.PENDING_APPROVAL)
                 .userDepartment(requester.getDepartment())
                 .description(requestDTO.description())
-                .loanPeriod(requestDTO.loanPeriod())
+                .loanPeriod(period)
                 .build();
 
         eventPublisher.publishEvent(new LoanRequestEvent(
@@ -336,7 +348,6 @@ public class LoanService {
                 () -> new NoLoansFoundException("This loan does not exist")
         );
         loan.setAssetLoanStatus(AssetLoanStatus.COLLECTED);
-        loan.setCheckoutDate(LocalDateTime.now());
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
@@ -420,6 +431,35 @@ public class LoanService {
         auditLogService.logCheckIn(manager.getUserId(), loanId, assetInfo);
 
         return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
+    }
+
+    public void checkAssetCollected(User user) {
+        System.out.println(user.getName());
+        if (user.getRole() == Role.BORROWER) {
+            List<Loan> loans = loanRepository.findByUserUserIdAndAssetLoanStatusInAndCheckoutDateBefore(
+                    user.getUserId(),
+                    List.of(AssetLoanStatus.PENDING_APPROVAL, AssetLoanStatus.PENDING_COLLECTION),
+                    LocalDateTime.now()
+            );
+
+            if (!loans.isEmpty()) {
+                for (Loan loan : loans) {
+                    loan.setAssetLoanStatus(AssetLoanStatus.LOAN_REJECTED);
+                    loan.setStatus(LoanStatus.REJECTED);
+
+                    Asset asset = loan.getAsset();
+                    asset.setStatus(AssetStatus.AVAILABLE);
+                    assetRepository.save(asset);
+                    notificationService.sendSystemNotification(
+                            user.getUserId(),
+                            NotificationReason.LOAN_STATUS_UPDATED,
+                            "Your loan for " + (asset != null ? asset.getTitle() : "Asset") + " was rejected because the collection period has passed."
+                    );
+                }
+
+                loanRepository.saveAll(loans);
+            }
+        }
     }
 
 }
