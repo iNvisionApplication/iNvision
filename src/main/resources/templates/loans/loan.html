@@ -99,6 +99,36 @@
 
         </div>
     </div>
+
+    <!-- Cancel / Reject Loan Modal -->
+    <div id="cancelLoanModal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 500px;">
+
+            <div class="modal-header">
+                <h3>Cancel Loan Request</h3>
+                <button type="button" class="close-btn" onclick="closeCancelModal()">✕</button>
+            </div>
+
+            <form id="cancelLoanForm">
+                <input type="hidden" id="cancelLoanId">
+
+                <div class="info-box" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                    <p style="margin: 0; font-size: 14px;"><strong>Asset:</strong> <span id="cancelAssetTitle"></span></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cancelReason">Reason for Cancellation <span class="label-optional">(Optional)</span></label>
+                    <textarea class="form-control" id="cancelReason" rows="3" placeholder="E.g., No longer need this asset..."></textarea>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">Keep Loan</button>
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </section>
 </body>
 </html>
