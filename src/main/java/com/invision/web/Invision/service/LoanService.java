@@ -1,6 +1,7 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
+import com.invision.web.Invision.dto.LoanRejectionDTO;
 import com.invision.web.Invision.dto.LoanStatusDTO;
 import com.invision.web.Invision.dto.LoanRequestDTO;
 import com.invision.web.Invision.dto.LoanResponseDTO;
@@ -24,16 +25,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -63,8 +60,8 @@ public class LoanService {
 
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public List<LoanResponseDTO> getOverdueLoansByDepartment(Department department) {
-        List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusNotAndUserDepartment(
-                LocalDateTime.now(), LoanStatus.RETURNED, department);
+        List<Loan> loans = loanRepository.findByDueDateBeforeAndStatusAndUserDepartment(
+                LocalDateTime.now(), LoanStatus.APPROVED, department);
 
         if (loans.isEmpty()) {
             throw new NoLoansFoundException("No overdue loans found for department: " + department);
@@ -289,6 +286,26 @@ public class LoanService {
         auditLogService.logCreate(requester.getUserId(), EntityType.LOAN, savedLoan.getLoanId(), "Loan requested for Asset ID: " + requestDTO.assetId());
 
         return loanMapper.loanToLoanResponseDTO(savedLoan);
+    }
+
+    @PreAuthorize("hasRole('ROLE_BORROWER')")
+    @Transactional
+    public LoanResponseDTO rejectLoan(LoanRejectionDTO rejectionDTO){
+      Loan loan = loanRepository.findById(rejectionDTO.loanId()).orElseThrow(
+              () -> new NoLoansFoundException("This loan does not exist")
+      );
+
+        loan.setAssetLoanStatus(AssetLoanStatus.REJECTED_BY_USER);
+        loan.setStatus(LoanStatus.REJECTED);
+        loan.getAsset().setStatus(AssetStatus.AVAILABLE);
+
+      if(rejectionDTO.reason().isEmpty()){
+          loan.setRejectionReason("Did not not asset anymore");
+      }else{
+          loan.setRejectionReason(rejectionDTO.reason());
+      }
+
+      return loanMapper.loanToLoanResponseDTO(loanRepository.save(loan));
     }
 
     public Page<LoanResponseDTO> getAllLoansByStatus(LoanStatus status, int page, int size) {

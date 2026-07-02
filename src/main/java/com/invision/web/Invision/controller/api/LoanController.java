@@ -55,6 +55,13 @@ public class LoanController {
         return ResponseEntity.ok(loanService.loanActionCollect(loanId));
     }
 
+    @PatchMapping("/reject")
+    public ResponseEntity<LoanResponseDTO> rejectLoan(
+            @RequestBody LoanRejectionDTO rejectionDTO) throws BadRequestException {
+
+        return ResponseEntity.ok(loanService.rejectLoan(rejectionDTO));
+    }
+
     @GetMapping("/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_MANAGER')")
     public ResponseEntity<Page<LoanResponseDTO>> getLoansByStatus(

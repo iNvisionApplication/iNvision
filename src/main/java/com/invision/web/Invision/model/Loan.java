@@ -66,6 +66,9 @@ public class Loan {
     @Column(name="return_date")
     private LocalDateTime returnDate;
 
+    @Column(name="rejection_reason")
+    private String rejectionReason;
+
     public boolean isOverdue(){
         return dueDate != null
                 && dueDate.isBefore(LocalDateTime.now())
