@@ -147,13 +147,13 @@ function loadUserLoans(pageNumber) {
           url = `/api/loans?page=${pageNumber}&size=${getLoansPageSize()}`;
       }
 
-    } else {
-        // Borrower routing falls through here
-        if (!userId) return;
-        url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
-    }
+   } else {
+           // Borrower routing falls through here
+           if (!userId) return;
+           url = `/api/loans/user/${userId}?page=${pageNumber}&size=${getLoansPageSize()}`;
+     }
 
-    fetch(url)
+       fetch(url)
         .then(async response => {
             if (!response.ok) {
                 throw new Error(`Server returned status ${response.status}`);
@@ -189,16 +189,21 @@ function loadUserLoans(pageNumber) {
                         actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">${loan.assetLoanStatus || 'Processed'}</span>`;
                     }
                 } else {
-                    if (loan.status === "APPROVED" && loan.assetLoanStatus === "PENDING_COLLECTION") {
-                        actionsHtml = `<button class="btn btn-sm btn-steel" onclick="executeLoanAction(${loan.loanId}, 'collect')">Confirm Collection</button>`;
-                    } else if (loan.status === "APPROVED" && loan.assetLoanStatus === "COLLECTED") {
-                        actionsHtml = `<button class="btn btn-sm btn-danger" onclick="executeLoanAction(${loan.loanId}, 'return')">Return Asset</button>`;
-                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
-                        actionsHtml = `<em style="font-size:12px; color:var(--amber);">Awaiting Manager Sign-off</em>`;
-                    } else {
-                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">No Action</span>`;
-                    }
-                }
+                                    // Borrower Logic
+                                    let cancelBtn = `<button class="btn btn-sm btn-secondary" style="margin-left: 6px;" onclick="openCancelModal(${loan.loanId}, '${escapeText(loan.assetTitle)}')">Cancel</button>`;
+
+                                    if (loan.status === "APPROVED" && loan.assetLoanStatus === "PENDING_COLLECTION") {
+                                        actionsHtml = `<button class="btn btn-sm btn-steel" onclick="executeLoanAction(${loan.loanId}, 'collect')">Confirm Collection</button>` + cancelBtn;
+                                    } else if (loan.status === "APPROVED" && loan.assetLoanStatus === "COLLECTED") {
+                                        actionsHtml = `<button class="btn btn-sm btn-danger" onclick="executeLoanAction(${loan.loanId}, 'return')">Return Asset</button>`;
+                                    } else if (loan.assetLoanStatus === "PENDING_RETURN_CONFIRMATION") {
+                                        actionsHtml = `<em style="font-size:12px; color:var(--amber);">Awaiting Manager Sign-off</em>`;
+                                    } else if (loan.status === "PENDING") {
+                                        actionsHtml = cancelBtn;
+                                    } else {
+                                        actionsHtml = `<span style="font-size:11px; color:var(--text-muted);">No Action</span>`;
+                                    }
+                                }
 
                 row.innerHTML = `
                     <td><strong>#${loan.loanId || "N/A"}</strong></td>
@@ -456,7 +461,9 @@ function executeLoanAction(loanId, actionEndpoint) {
     });
 }
 
-// ================= ASSETS =================
+// =============================================
+// ASSET MANAGEMENT
+// =============================================
 
 function searchAllAssets() {
     const input = document.getElementById("assetSearchInput");
@@ -741,7 +748,9 @@ function openLoanPanel(assetId, assetTitle) {
     }
 }
 
-// ================= USERS =================
+// =============================================
+// USER MANAGEMENT
+// =============================================
 
 function closeLoanPanel() {
     const panel = document.getElementById("loanRequestPanel");
@@ -897,7 +906,9 @@ async function saveUserChanges(event) {
     }
 }
 
-// ================= HELPERS =================
+// =============================================
+// MODAL & UTILITY HELPERS
+// =============================================
 
 function getAssetImagePath(path) {
     if (!path || path === "string" || path === "url_photo") return "/images/no-image.png";
@@ -1138,7 +1149,9 @@ function showToast(message) {
     }, 4000);
 }
 
-// ================= ASK ME CHATBOT =================
+// =============================================
+// IVY THE CHATBOT
+// =============================================
 
 document.addEventListener("DOMContentLoaded", () => {
     const toggleBtn = document.getElementById("askMeToggle");
@@ -1392,3 +1405,70 @@ function closeReturnModal() {
     modal.classList.remove("open");
     modal.classList.add("hidden");
 }
+// ================= CANCEL / REJECT LOAN MODAL =================
+
+function openCancelModal(loanId, assetTitle) {
+    document.getElementById("cancelLoanId").value = loanId;
+    document.getElementById("cancelAssetTitle").innerText = assetTitle || "Unknown Asset";
+    document.getElementById("cancelLoanForm").reset();
+
+    const modal = document.getElementById("cancelLoanModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("open");
+}
+
+function closeCancelModal() {
+    const modal = document.getElementById("cancelLoanModal");
+    modal.classList.remove("open");
+    modal.classList.add("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const cancelForm = document.getElementById("cancelLoanForm");
+
+    if (cancelForm) {
+        cancelForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const loanId = document.getElementById("cancelLoanId").value;
+            const reason = document.getElementById("cancelReason").value;
+            const submitBtn = event.target.querySelector("button[type='submit']");
+
+            const payload = {
+                loanId: parseInt(loanId),
+                reason: reason
+            };
+
+            const csrfToken = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const csrfHeader = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = "Canceling...";
+
+            fetch(`/api/loans/cancel`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Status ${response.status}: ${errorText}`);
+                }
+
+                closeCancelModal();
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error("Cancel Failed:", error);
+                alert(`Error communicating with server:\n\n${error.message}`);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+    }
+});

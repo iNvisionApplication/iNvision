@@ -53,7 +53,7 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     );
 
     @EntityGraph(attributePaths = {"asset", "user"})
-    List<Loan> findByDueDateBeforeAndStatusNotAndUserDepartment(
+    List<Loan> findByDueDateBeforeAndStatusAndUserDepartment(
             LocalDateTime now,
             LoanStatus status,
             Department department
