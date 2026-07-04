@@ -2,6 +2,7 @@ package com.invision.web.Invision.exception;
 
 import com.azure.core.exception.HttpResponseException;
 import com.invision.web.Invision.dto.ErrorResponseDTO;
+import com.invision.web.Invision.exception.agent.RateLimitExceededException;
 import com.invision.web.Invision.exception.asset.BulkImportException;
 import com.invision.web.Invision.exception.asset.DuplicateSerialNumberException;
 import com.invision.web.Invision.exception.asset.ResourceNotFoundException;
@@ -191,50 +192,17 @@ public class GlobalExceptionHandler {
         ));
     }
 
-//    @ExceptionHandler(AccessDeniedException.class)
-//    public Object handleAccessDenied(AccessDeniedException ex, HttpServletRequest request,
-//                                     WebRequest webRequest) {
-//        if (isApiRequest(request)) {
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-//                    .body(new ErrorResponseDTO(403, "ACCESS_DENIED",
-//                            "Access Denied: " + ex.getMessage(),
-//                            webRequest.getDescription(false),
-//                            LocalDateTime.now()));
-//        }
-//
-//        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
-//        if ("/error".equals(request.getRequestURI())) {
-//            return new ModelAndView("error"); // Renders your static fallback template without forwarding
-//        }
-//
-//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-//        return new ModelAndView("forward:/error");
-//    }
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, String>> handleRateLimitExceeded(
+            RateLimitExceededException ex) {
 
-//    @ExceptionHandler(AuthorizationDeniedException.class)
-//    public Object handleAuthorizationDenied(AuthorizationDeniedException ex,
-//                                            HttpServletRequest request) {
-//        if (isApiRequest(request)) {
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-//                    .body(new ErrorResponseDTO(403, "FORBIDDEN",
-//                            "You do not have permission to perform this action",
-//                            request.getRequestURI(),
-//                            LocalDateTime.now()));
-//        }
-//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-//        return new ModelAndView("forward:/error");
-//    }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", ex.getMessage());
 
-//    @ExceptionHandler(NoResourceFoundException.class)
-//    public Object handleNoResource(NoResourceFoundException ex,
-//                                   HttpServletRequest request) {
-//        if (isApiRequest(request)) {
-//            return ResponseEntity.notFound().build();
-//        }
-//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-//        return new ModelAndView("forward:/error");
-//    }
-
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(response);
+    }
     // helper method
     private boolean isApiRequest(HttpServletRequest request) {
         String accept = request.getHeader("Accept");
@@ -248,24 +216,24 @@ public class GlobalExceptionHandler {
     }
 
 
-//    // Generic Handler
-//    @ExceptionHandler(Exception.class)
-//    public Object handleGeneral(Exception ex, HttpServletRequest request,
-//                                WebRequest webRequest) {
-//        if (isApiRequest(request)) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body(new ErrorResponseDTO(500, "INTERNAL_SERVER_ERROR",
-//                            "An unexpected error occurred: " + ex.getMessage(),
-//                            webRequest.getDescription(false),
-//                            LocalDateTime.now()));
-//        }
-//
-//        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
-//        if ("/error".equals(request.getRequestURI())) {
-//            return new ModelAndView("error"); // Renders your static fallback template without forwarding
-//        }
-//
-//        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-//        return new ModelAndView("forward:/error");
-//    }
+    // Generic Handler
+    @ExceptionHandler(Exception.class)
+    public Object handleGeneral(Exception ex, HttpServletRequest request,
+                                WebRequest webRequest) {
+        if (isApiRequest(request)) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponseDTO(500, "INTERNAL_SERVER_ERROR",
+                            "An unexpected error occurred: " + ex.getMessage(),
+                            webRequest.getDescription(false),
+                            LocalDateTime.now()));
+        }
+
+        // 💡 FIX 3: Break the infinite 500 redirect loop. If the error happened ON the error page, stop forwarding.
+        if ("/error".equals(request.getRequestURI())) {
+            return new ModelAndView("error"); // Renders your static fallback template without forwarding
+        }
+
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+        return new ModelAndView("forward:/error");
+    }
 }

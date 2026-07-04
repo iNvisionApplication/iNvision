@@ -1,5 +1,6 @@
 package com.invision.web.Invision.repository;
 
+import com.invision.web.Invision.enums.AssetLoanStatus;
 import com.invision.web.Invision.enums.Department;
 import com.invision.web.Invision.enums.LoanStatus;
 import com.invision.web.Invision.model.Loan;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +33,12 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
             List<LoanStatus> statuses
     );
 
+    List<Loan> findByUserUserIdAndAssetLoanStatusInAndCheckoutDateBefore(
+            Long userId,
+            List<AssetLoanStatus>statuses,
+            LocalDateTime date
+    );
+
     @EntityGraph(attributePaths = {"asset", "user"})
     List<Loan> findByUserDepartmentAndStatus(Department department, LoanStatus status);
 
@@ -45,7 +53,7 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     );
 
     @EntityGraph(attributePaths = {"asset", "user"})
-    List<Loan> findByDueDateBeforeAndStatusNotAndUserDepartment(
+    List<Loan> findByDueDateBeforeAndStatusAndUserDepartment(
             LocalDateTime now,
             LoanStatus status,
             Department department

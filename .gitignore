@@ -34,7 +34,7 @@ desktop.ini
 # =========================
 .env
 .env.*
-application-local.properties
+.env
 application-dev.properties
 application.properties
 
@@ -87,4 +87,4 @@ uploads/
 # =========================
 # Secrets
 # =========================
-src/main/resources/application-local.properties
+.env

@@ -1,32 +1,60 @@
 package com.invision.web.Invision.service;
 
 import com.invision.web.Invision.config.CustomUserDetails;
+import com.invision.web.Invision.exception.agent.RateLimitExceededException;
 import com.invision.web.Invision.model.ConversationMessage;
 import com.invision.web.Invision.model.Conversation;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class ChatService {
     private final ChatClient chatClient;
     private final ConversationMemoryService memoryService;
+    private final Map<Long, Bucket> buckets = new ConcurrentHashMap<>();
+
+    //rate limiting
+    private Bucket getBucket(Long userId) {
+        return buckets.computeIfAbsent(userId, id ->
+                Bucket.builder()
+                        .addLimit(Bandwidth.classic(3, Refill.greedy(10, Duration.ofMinutes(1))))
+                        .build()
+        );
+    }
 
     public String chat(String userMessage){
         Long userId = getCurrentUserId();
 
+        //should user pass request limit
+        if (!getBucket(userId).tryConsume(1)) {
+            throw new RateLimitExceededException(
+                    "You're sending messages too quickly. Please wait a moment and try again."
+            );
+        }
+
+        //get conversation from memory or create new conversation if one does not exist
         Conversation conversation = memoryService.getConversation(userId);
 
+        //add new user message to conversation memory
         conversation.addChatMessage(
                 new ConversationMessage(
                         ConversationMessage.ChatRole.USER,
@@ -34,13 +62,15 @@ public class ChatService {
                         Instant.now()
                 ));
 
-
+        //convert conversation to list of spring ai messages
         Prompt prompt = new Prompt(buildMessages(conversation));
 
+        //get ai response
         var chatResponse = chatClient.prompt(prompt)
                 .call()
                 .chatResponse();
 
+        //add assistant response to the conversation
         String response = chatResponse.getResult().getOutput().getText();
                   conversation.addChatMessage(
                 new ConversationMessage(
@@ -63,10 +93,12 @@ public class ChatService {
 
     }
 
+    //convert conversation to list of spring ai messages
     private List<Message> buildMessages(Conversation conversation) {
 
         List<Message> messages = new ArrayList<>();
 
+        //add messages from conversation to list of spring ai messages with roles
         for (ConversationMessage message : conversation.getMessages()) {
 
             switch (message.chatRole()) {

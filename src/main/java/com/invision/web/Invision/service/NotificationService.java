@@ -4,12 +4,10 @@ import com.invision.web.Invision.config.CustomUserDetails;
 import com.invision.web.Invision.dto.SystemNotificationDTO;
 import com.invision.web.Invision.enums.NotificationReason;
 import com.invision.web.Invision.event.LoanRequestEvent;
-import com.invision.web.Invision.exception.user.UserNotFoundException;
 import com.invision.web.Invision.mapper.NotificationMapper;
 import com.invision.web.Invision.model.SystemNotification;
 import com.invision.web.Invision.model.User;
 import com.invision.web.Invision.repository.SystemNotificationRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -18,7 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.web.client.HttpClientErrorException;
+
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -82,6 +80,7 @@ public class NotificationService {
         systemNotificationRepository.save(notification);
     }
 
+    //send notifications after successful
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleLoanRequest(LoanRequestEvent event){
         String message = "A loan for "+event.getAssetTitle()+"was requested by "+ event.getRequesterEmail() ;

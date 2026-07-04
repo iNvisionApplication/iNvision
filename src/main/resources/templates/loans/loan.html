@@ -50,6 +50,85 @@
         </table>
     </div>
 
+
+
+    <div id="returnVerificationModal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 500px;">
+
+            <div class="modal-header">
+                <h3>Verify Asset Return</h3>
+                <button type="button" class="close-btn" onclick="closeReturnModal()">✕</button>
+            </div>
+
+            <form id="returnVerificationForm">
+                <input type="hidden" id="returnLoanId">
+
+                <div class="info-box" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                    <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Asset:</strong> <span id="returnAssetTitle">MacBook Pro 16-inch M3</span></p>
+                    <p style="margin: 0; font-size: 14px;"><strong>Borrower:</strong> <span id="returnBorrowerName">John Doe</span></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required-label" for="returnCondition">Current Condition</label>
+                    <select class="form-control" id="returnCondition" name="condition" required>
+                        <option value="GOOD">Good / Lightly Used</option>
+                        <option value="FAIR">Fair / Usable</option>
+                        <option value="DAMAGED">Damaged / Requires Repair</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required-label" for="returnLocation">Returned To Hub</label>
+                    <select class="form-control" id="returnLocation" required>
+                        <option value="IT_STOREROOM">IT Storeroom</option>
+                        <option value="VIDEO_LOCKER">Video Locker</option>
+                        <option value="PRODUCTION_STUDIO">Production Studio</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="returnNotes">Manager Remarks <span class="label-optional">(Optional)</span></label>
+                    <textarea class="form-control" id="returnNotes" rows="3" placeholder="Note any new scratches, missing cables, etc."></textarea>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeReturnModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Finalize Return</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Cancel / Reject Loan Modal -->
+    <div id="cancelLoanModal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 500px;">
+
+            <div class="modal-header">
+                <h3>Cancel Loan Request</h3>
+                <button type="button" class="close-btn" onclick="closeCancelModal()">✕</button>
+            </div>
+
+            <form id="cancelLoanForm">
+                <input type="hidden" id="cancelLoanId">
+
+                <div class="info-box" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                    <p style="margin: 0; font-size: 14px;"><strong>Asset:</strong> <span id="cancelAssetTitle"></span></p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cancelReason">Reason for Cancellation <span class="label-optional">(Optional)</span></label>
+                    <textarea class="form-control" id="cancelReason" rows="3" placeholder="E.g., No longer need this asset..."></textarea>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">Keep Loan</button>
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </section>
 </body>
 </html>

@@ -4,6 +4,7 @@ import com.invision.web.Invision.dto.UserRegistrationDTO;
 import com.invision.web.Invision.enums.Role;
 import com.invision.web.Invision.exception.user.EmailAlreadyExistsException;
 import com.invision.web.Invision.exception.user.PasswordMismatchException;
+import com.invision.web.Invision.service.LoanService;
 import com.invision.web.Invision.service.UserService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ReportApiController {
 
     private final AssetService assetService;
-    private final LoanRepository loanRepository; // Inject repository directly for raw entity streams
+    private final LoanRepository loanRepository;
 
     @GetMapping("/inventory")
     public ResponseEntity<List<AssetResponseDTO>> getInventoryReport(
@@ -74,7 +74,7 @@ public class ReportApiController {
 
     @GetMapping("/overdue")
     public ResponseEntity<List<LoanReportDTO>> getOverdueReport() {
-        // Pull actual overdue database records matching structural timelines
+
         List<Loan> overdueLoans = loanRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), com.invision.web.Invision.enums.LoanStatus.RETURNED);
 
         List<LoanReportDTO> report = overdueLoans.stream()

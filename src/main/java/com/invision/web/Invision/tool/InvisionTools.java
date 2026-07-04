@@ -1,9 +1,6 @@
 package com.invision.web.Invision.tool;
 
-import com.invision.web.Invision.dto.AssetResponseDTO;
-import com.invision.web.Invision.dto.AssetSearchRequest;
-import com.invision.web.Invision.dto.LoanRequestDTO;
-import com.invision.web.Invision.dto.LoanResponseDTO;
+import com.invision.web.Invision.dto.*;
 import com.invision.web.Invision.enums.*;
 import com.invision.web.Invision.service.AssetService;
 import com.invision.web.Invision.service.LoanService;
@@ -12,14 +9,57 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 
 @Component
 @RequiredArgsConstructor
 public class InvisionTools {
 
+    //tools agent calls after prompt
+
     private final AssetService assetService;
     private final LoanService loanService;
+    public record DateTimeRequest(String timezone) {}
+    public record DateTimeResponse(
+            String isoDateTime,
+            String dayOfWeek,
+            String date,
+            String time,
+            String zone
+    ) {}
+
+
+    @Tool(description = """
+    Returns the current date and time.
+
+    Always use this tool when answering questions about:
+    - today's date
+    - current time
+    - current day
+    - tomorrow
+    - yesterday
+    - next week
+    - scheduling
+    - deadlines
+
+    Never assume the current date.
+    """)
+    public DateTimeResponse currentDateTime() {
+
+        ZonedDateTime now = ZonedDateTime.now();
+
+        return new DateTimeResponse(
+                now.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+                now.getDayOfWeek().toString(),
+                now.toLocalDate().toString(),
+                now.toLocalTime().toString(),
+                now.getZone().toString()
+        );
+    }
 
     @Tool(description = """
                         Searches the asset inventory.
@@ -65,11 +105,14 @@ public class InvisionTools {
     @Tool(description = "Submit a loan request for an asset. Only call this after confirming " +
             "the asset name and loan period with the user. Never call without explicit user confirmation.")
     public LoanResponseDTO submitLoanRequest(
-           @ToolParam(description = "The ID of the asset to request") Long assetId,
-           @ToolParam(description = "Loan period: ONE_WEEK,TWO_WEEKS,THREE_WEEKS, FOUR_WEEKS")String loanPeriod,
-           @ToolParam(description = "Reason for the loan") String description
+            @ToolParam(description = "The ID of the asset to request") Long assetId,
+            @ToolParam(description = "The start date and time of the loan in ISO-8601 format (e.g., '2026-07-06T09:00:00')") String checkoutDateStr,
+            @ToolParam(description = "The end date and time of the loan in ISO-8601 format (e.g., '2026-07-13T17:00:00')") String dueDateStr,
+            @ToolParam(description = "Reason for the loan") String description
     ){
-        LoanRequestDTO requestDTO = new LoanRequestDTO(assetId,description,LoanPeriod.valueOf(loanPeriod));
+        LocalDateTime checkoutDate = LocalDateTime.parse(checkoutDateStr);
+        LocalDateTime dueDate = LocalDateTime.parse(dueDateStr);
+        LoanRequestDTO requestDTO = new LoanRequestDTO(assetId,description,checkoutDate, dueDate);
         return loanService.requestLoan(requestDTO);
     }
 
@@ -79,6 +122,41 @@ public class InvisionTools {
 
         return loanService.getDepartmentLoansByStatus(LoanStatus.PENDING);
     }
+
+    @Tool(description = """
+        Cancels an existing asset loan request.
+
+        Never use a loan ID remembered from a previous conversation turn.
+        Never guess a loan ID.
+        If multiple pending loans match the user's request, ask the user to clarify.
+        Use this tool when the borrower wants to:
+            - cancel a loan request
+            - withdraw a loan application
+            - no longer borrow an asset
+            - cancel a pending loan
+            - cancel a loan that is awaiting approval
+            - cancel a loan that is awaiting collection
+
+        Required:
+            - loanId
+
+        Optional:
+            - reason (if the user gives one)
+
+        If the user does not provide a reason, leave it empty and a default cancellation reason will be used.
+
+        Only use this tool for cancelling the user's own loan request. Do not use it for approving, rejecting on behalf of staff, returning assets, or deleting loans.
+        """)
+    public LoanResponseDTO cancelLoan(
+            @ToolParam(description = "The ID of the loan to cancel.") Long loanId,
+            @ToolParam(description = "Optional reason for cancelling the loan request.") String reason
+    ) {
+        LoanRejectionDTO rejectionDTO = new LoanRejectionDTO(loanId, reason);
+        return loanService.rejectLoan(rejectionDTO);
+    }
+
+
+
 
     private Category parseCategory(String category) {
         if (category == null) return null;
